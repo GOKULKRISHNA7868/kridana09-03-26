@@ -442,14 +442,72 @@ const ReelViewer = () => {
         zIndex: 999999,
         display: "flex",
         justifyContent: "center",
+        alignItems: "center",
       }}
     >
+      {/* SIDE NAVIGATION OUTSIDE VIDEO */}
+      <div
+        style={{
+          position: "absolute",
+          right: "400px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          zIndex: 20,
+        }}
+      >
+        {/* UP */}
+        <button
+          onClick={() =>
+            setActiveIndex((p) => (p - 1 < 0 ? reels.length - 1 : p - 1))
+          }
+          style={{
+            width: "50px",
+            height: "50px",
+            borderRadius: "50%",
+            background: "#ff7a00",
+            color: "white",
+            fontSize: "22px",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+          }}
+        >
+          ↑
+        </button>
+
+        {/* DOWN */}
+        <button
+          onClick={() =>
+            setActiveIndex((p) => (p + 1 >= reels.length ? 0 : p + 1))
+          }
+          style={{
+            width: "50px",
+            height: "50px",
+            borderRadius: "50%",
+            background: "#ff7a00",
+            color: "white",
+            fontSize: "22px",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+          }}
+        >
+          ↓
+        </button>
+      </div>
+
+      {/* MAIN PHONE FRAME */}
       <div
         style={{
           width: "100%",
-          maxWidth: "430px",
+          maxWidth: "420px",
           height: "100vh",
           position: "relative",
+          overflow: "hidden",
+          borderRadius: "12px",
         }}
       >
         <AnimatePresence mode="wait">
@@ -457,112 +515,93 @@ const ReelViewer = () => {
             key={reel.reelId}
             src={reel.videoUrl}
             autoPlay
+            loop
             playsInline
             controls={false}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
           />
         </AnimatePresence>
 
-        {/* TOP BAR */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center text-white bg-gradient-to-b from-black/70 to-transparent">
-          <span className="font-semibold">{reel.title}</span>
-          <button onClick={() => navigate(-1)}>✕</button>
+        {/* VIEWS BADGE */}
+        <div className="absolute top-3 right-3 bg-white/90 text-black text-xs font-semibold px-3 py-1 rounded-full">
+          {views} Views
         </div>
 
-        {/* FOLLOW BAR */}
-        <div className="absolute top-14 left-0 right-0 flex justify-center">
+        {/* PROFILE + FOLLOW BAR */}
+        <div className="absolute bottom-16 left-4 text-white flex items-center gap-2">
+          <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+
+          <span className="text-sm font-semibold">{reel.title}</span>
+
           {!isFollowing ? (
             <button
               onClick={followProfile}
               disabled={followLoading}
-              className="bg-blue-500 text-white px-5 py-2 rounded-full font-semibold shadow-lg active:scale-95 transition"
+              className="bg-orange-500 text-white text-xs px-3 py-1 rounded font-bold"
             >
-              {followLoading ? "Following..." : "Follow"}
+              Follow
             </button>
           ) : (
             <button
               onClick={unfollowProfile}
               disabled={followLoading}
-              className="bg-white text-black px-5 py-2 rounded-full font-semibold shadow-lg active:scale-95 transition"
+              className="bg-white text-black text-xs px-3 py-1 rounded font-bold"
             >
-              {followLoading ? "Unfollowing..." : "Unfollow"}
+              Following
             </button>
           )}
         </div>
 
-        {/* ACTION BAR */}
+        {/* ACTION BUTTONS */}
         <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5 text-white">
+          {/* LIKE */}
           <button onClick={toggleLike} className="text-xl">
             {liked ? "❤️" : "🤍"}
-            <div className="text-sm">{likes}</div>
+            <div className="text-xs">{likes}</div>
           </button>
-          {/* 🔽 DISLIKE BUTTON */}
+
+          {/* DISLIKE */}
           <button onClick={toggleDislike} className="text-xl">
             {disliked ? "👎" : "👍"}
-            <div className="text-sm">{dislikes}</div>
+            <div className="text-xs">{dislikes}</div>
           </button>
 
+          {/* COMMENTS */}
           <button onClick={() => setShowComments(true)} className="text-xl">
-            💬<div className="text-sm">{comments.length}</div>
+            💬
+            <div className="text-xs">{comments.length}</div>
           </button>
 
+          {/* SHARE */}
           <button
             onClick={() => navigator.clipboard.writeText(window.location.href)}
             className="text-xl"
           >
             📤
           </button>
-
-          <div className="text-sm">👁 {views}</div>
         </div>
 
-        {/* COMMENTS PANEL */}
-        {showComments && (
-          <div className="absolute inset-0 bg-black/90 text-white flex flex-col">
-            <div className="p-3 flex justify-between border-b border-white/20">
-              <span>Comments</span>
-              <button onClick={() => setShowComments(false)}>✕</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-3">
-              {comments.map((c) => (
-                <div key={c.id} className="mb-2 text-sm">
-                  <b>{c.userName}</b>: {c.text}
-                </div>
-              ))}
-              <div ref={commentsEndRef} />
-            </div>
-
-            <div className="p-3 flex gap-2 border-t border-white/20">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 bg-black border border-white/30 px-3 py-2 rounded text-white"
-              />
-              <button
-                onClick={sendComment}
-                className="bg-white text-black px-4 rounded"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        )}
+        {/* SIDE NAVIGATION (PC) */}
+        {/* SIDE NAVIGATION (PC / LAPTOP) */}
+        {/* SIDE NAVIGATION (PC / LAPTOP) */}
 
         {/* PROFILE BUTTON */}
         <button
           onClick={async () => {
-            await trackProfileView(reel.ownerId, reel.type); // ✅ pass real data
+            await trackProfileView(reel.ownerId, reel.type);
             navigate(
               reel.type === "trainer"
                 ? `/trainers/${reel.ownerId}`
                 : `/institutes/${reel.ownerId}`,
             );
           }}
-          className="absolute bottom-6 left-4 bg-white px-4 py-2 rounded-full text-sm font-bold shadow-lg"
+          className="absolute bottom-4 left-4 bg-white text-black px-4 py-2 rounded-full text-xs font-bold shadow-lg"
         >
-          View Profile 👤
+          View Profile
         </button>
       </div>
     </div>
