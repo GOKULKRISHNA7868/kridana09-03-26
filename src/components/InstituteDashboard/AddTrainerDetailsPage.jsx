@@ -734,7 +734,7 @@ export default function AddTrainerDetailsPage() {
                 className={inputClass}
                 value={formData.firstName}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^A-Za-z]/g, "");
+                  const value = e.target.value.replace(/[^A-Za-z.\s]/g, "");
                   setFormData({ ...formData, firstName: value });
                 }}
               />
@@ -754,12 +754,39 @@ export default function AddTrainerDetailsPage() {
                 className={inputClass}
                 value={formData.lastName}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^A-Za-z]/g, "");
+                  const value = e.target.value.replace(/[^A-Za-z.\s]/g, "");
                   setFormData({ ...formData, lastName: value });
                 }}
               />
               {errors.lastName && (
                 <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold mb-2">
+                Gender<span className="text-red-500">*</span>
+              </label>
+
+              <select
+                className={inputClass}
+                value={formData.gender}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    gender: e.target.value,
+                  }))
+                }
+              >
+                <option value="">Select Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Others</option>
+              </select>
+
+              {errors.gender && (
+                <span className="text-red-500 text-xs mt-1">
+                  {errors.gender}
+                </span>
               )}
             </div>
 
@@ -772,7 +799,7 @@ export default function AddTrainerDetailsPage() {
                 className={inputClass}
                 value={formData.designation}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^A-Za-z\s]/g, "");
+                  const value = e.target.value.replace(/[^A-Za-z.\s]/g, "");
                   setFormData({ ...formData, designation: value });
                 }}
               />

@@ -110,7 +110,37 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
     fetchTrainers();
   }, [activeTab, user]);
+  const handleStudentImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !editingStudent) return;
 
+    // Upload to Cloudinary
+    const url = await uploadToCloudinary(file, "image");
+
+    if (!url) return;
+
+    try {
+      // Update Firebase
+      await updateDoc(doc(db, "students", editingStudent.id), {
+        profileImageUrl: url,
+      });
+
+      // Update modal UI
+      setEditingStudent((prev) => ({
+        ...prev,
+        profileImageUrl: url,
+      }));
+
+      // Update table UI instantly
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === editingStudent.id ? { ...s, profileImageUrl: url } : s,
+        ),
+      );
+    } catch (error) {
+      console.error("Image update error:", error);
+    }
+  };
   /* ================= FETCH STUDENTS ================= */
   useEffect(() => {
     if (activeTab !== "customers" || !user?.uid) return;
@@ -299,7 +329,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
         await setDoc(
           doc(db, "institutes", user.uid),
           { profileImage: base64 },
-          { merge: true }
+          { merge: true },
         );
       } catch (error) {
         console.error("Profile upload error:", error);
@@ -411,11 +441,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
       prev.map((s) =>
         s.id === selectedStudent.id
           ? {
-            ...s,
-            status: "Left",
-            leftReason: leaveReason,
-            leftDate: serverTimestamp(),
-          }
+              ...s,
+              status: "Left",
+              leftReason: leaveReason,
+              leftDate: serverTimestamp(),
+            }
           : s,
       ),
     );
@@ -460,11 +490,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
       prev.map((s) =>
         s.id === student.id
           ? {
-            ...s,
-            status: "Left",
-            leftReason: reason,
-            leftDate: serverTimestamp(),
-          }
+              ...s,
+              status: "Left",
+              leftReason: reason,
+              leftDate: serverTimestamp(),
+            }
           : s,
       ),
     );
@@ -474,7 +504,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
       const updatedProfile = {
         ...profile,
         profileImage: "",
-        profileImageUrl: ""
+        profileImageUrl: "",
       };
 
       setProfile(updatedProfile);
@@ -482,7 +512,6 @@ const MyAccountPage = ({ setActiveMenu }) => {
       await setDoc(doc(db, "institutes", user.uid), updatedProfile, {
         merge: true,
       });
-
     } catch (error) {
       console.error("Error removing profile image:", error);
     }
@@ -493,7 +522,6 @@ const MyAccountPage = ({ setActiveMenu }) => {
       {/* HEADER */}
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
-
         {/* TITLE */}
         <div>
           <h1 className="text-3xl font-bold text-black">My Account</h1>
@@ -504,8 +532,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
         {/* PROFILE IMAGE */}
         <div className="flex items-center gap-4">
-
-          {(profile.profileImage || profile.profileImageUrl) ? (
+          {profile.profileImage || profile.profileImageUrl ? (
             <img
               src={profile.profileImage || profile.profileImageUrl}
               className="w-24 h-24 rounded-xl object-cover border shadow"
@@ -536,29 +563,29 @@ const MyAccountPage = ({ setActiveMenu }) => {
               </button>
             )}
           </div>
-
         </div>
-
       </div>
 
       {/* TABS */}
       <div className="flex flex-wrap gap-4 sm:gap-8 border-b pb-2 mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab("management")}
-          className={`flex items-center gap-2 pb-2 border-b-2 ${activeTab === "management"
-            ? "text-orange-500 border-orange-500 font-semibold"
-            : "text-gray-600 border-transparent"
-            }`}
+          className={`flex items-center gap-2 pb-2 border-b-2 ${
+            activeTab === "management"
+              ? "text-orange-500 border-orange-500 font-semibold"
+              : "text-gray-600 border-transparent"
+          }`}
         >
           <Users size={18} /> Management
         </button>
 
         <button
           onClick={() => setActiveTab("customers")}
-          className={`flex items-center gap-2 pb-2 border-b-2 ${activeTab === "customers"
-            ? "text-orange-500 border-orange-500 font-semibold"
-            : "text-gray-600 border-transparent"
-            }`}
+          className={`flex items-center gap-2 pb-2 border-b-2 ${
+            activeTab === "customers"
+              ? "text-orange-500 border-orange-500 font-semibold"
+              : "text-gray-600 border-transparent"
+          }`}
         >
           <Users size={18} /> Customers
         </button>
@@ -711,10 +738,13 @@ const MyAccountPage = ({ setActiveMenu }) => {
                         onChange={(e) =>
                           setEditingTrainer({
                             ...editingTrainer,
-                            firstName: e.target.value.replace(/[^A-Za-z ]/g, ""),
+                            firstName: e.target.value.replace(
+                              /[^A-Za-z ]/g,
+                              "",
+                            ),
                           })
                         }
-                       className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
                       />
                     </div>
 
@@ -725,13 +755,16 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <input
                         value={editingTrainer?.lastName || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingTrainer({
                             ...editingTrainer,
                             lastName: value,
                           });
                         }}
-                       className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
                       />
                     </div>
 
@@ -767,7 +800,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
                             phone: value,
                           });
                         }}
-                       className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
                       />
                     </div>
 
@@ -804,7 +837,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <input
                         value={editingTrainer?.designation || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingTrainer({
                             ...editingTrainer,
                             designation: value,
@@ -826,7 +862,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
                             category: e.target.value,
                           })
                         }
-                       className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
                       />
                     </div>
 
@@ -1167,10 +1203,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
                   key={item}
                   onClick={() => setStatusFilter(item)}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition
-        ${statusFilter === item
-                      ? "bg-orange-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                    }`}
+        ${
+          statusFilter === item
+            ? "bg-orange-500 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
                 >
                   {item}
                 </button>
@@ -1182,10 +1219,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
           <div className="overflow-x-auto rounded-lg border">
             {/* TABLE HEADER */}
             <div
-              className={`grid ${statusFilter === "Left"
-                ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                } bg-[#E9B489] text-black font-medium px-6 py-3 items-center`}
+              className={`grid ${
+                statusFilter === "Left"
+                  ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                  : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+              } bg-[#E9B489] text-black font-medium px-6 py-3 items-center`}
             >
               <p>Name</p>
               <p>Age</p>
@@ -1201,30 +1239,27 @@ const MyAccountPage = ({ setActiveMenu }) => {
             {filteredStudents.map((student, index) => (
               <div
                 key={student.id}
-                className={`grid ${statusFilter === "Left"
-                  ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                  : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                  } px-6 py-4 items-center border-t`}
+                className={`grid ${
+                  statusFilter === "Left"
+                    ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                    : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                } px-6 py-4 items-center border-t`}
               >
                 <p className="flex items-center">
                   <span className="mr-2">{index + 1}.</span>
                   {student.firstName} {student.lastName}
                 </p>
-                <p className="whitespace-pre-line">
-                  {student.age
-                    ?.replace(" years", "") // 👈 removes years
-                    .replace(" Adults", "\nAdults")
-                    .replace(" Teenage", "\nTeenage")}
-                </p>
+                <p className="whitespace-pre-line">{student.age} years</p>
                 <p>{student.belt}</p>
 
                 {/* STATUS BADGE */}
                 <p>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${student.status === "Left"
-                      ? "bg-red-400 text-white"
-                      : "bg-green-400 text-black"
-                      }`}
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      student.status === "Left"
+                        ? "bg-red-400 text-white"
+                        : "bg-green-400 text-black"
+                    }`}
                   >
                     {student.status}
                   </span>
@@ -1327,30 +1362,33 @@ const MyAccountPage = ({ setActiveMenu }) => {
             <div className="grid grid-cols-3 gap-3 mb-5">
               <button
                 onClick={() => setSelectedUploadType("image")}
-                className={`py-2 rounded border ${selectedUploadType === "image"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "image"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Image
               </button>
 
               <button
                 onClick={() => setSelectedUploadType("video")}
-                className={`py-2 rounded border ${selectedUploadType === "video"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "video"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Video
               </button>
 
               <button
                 onClick={() => setSelectedUploadType("reel")}
-                className={`py-2 rounded border ${selectedUploadType === "reel"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "reel"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Reel
               </button>
@@ -1416,7 +1454,28 @@ const MyAccountPage = ({ setActiveMenu }) => {
                 <h3 className="text-lg font-semibold text-orange-500 mb-4">
                   👤 Personal Information
                 </h3>
+                <div className="flex items-center gap-4 mb-4">
+                  {editingStudent?.profileImageUrl ? (
+                    <img
+                      src={editingStudent.profileImageUrl}
+                      className="w-20 h-20 rounded-lg object-cover border"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <User size={30} />
+                    </div>
+                  )}
 
+                  <label className="cursor-pointer bg-orange-500 text-white px-3 py-1 rounded text-sm">
+                    Change Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleStudentImageChange}
+                    />
+                  </label>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">
@@ -1625,7 +1684,6 @@ const MyAccountPage = ({ setActiveMenu }) => {
                         })
                       }
                       className="w-full border rounded-lg px-3 py-2 focus:outline-none"
-
                     />
                   </div>
 
@@ -1658,7 +1716,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
                           timings: e.target.value,
                         })
                       }
-                     className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
                     />
                   </div>
                 </div>

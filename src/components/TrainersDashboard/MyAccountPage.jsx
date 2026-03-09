@@ -243,7 +243,37 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
     alert("Profile Saved ✅");
   };
+  const handleStudentProfileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !editingStudent) return;
 
+    // Upload to Cloudinary using your existing API
+    const url = await uploadToCloudinary(file, "image");
+
+    if (!url) return;
+
+    try {
+      // Update Firebase
+      await updateDoc(doc(db, "trainerstudents", editingStudent.id), {
+        profileImageUrl: url,
+      });
+
+      // Update modal state
+      setEditingStudent((prev) => ({
+        ...prev,
+        profileImageUrl: url,
+      }));
+
+      // Update table state instantly
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === editingStudent.id ? { ...s, profileImageUrl: url } : s,
+        ),
+      );
+    } catch (error) {
+      console.error("Profile image update error:", error);
+    }
+  };
   /* ================= UPLOAD PROFILE IMAGE ================= */
   const handleProfileUpload = (e) => {
     const file = e.target.files[0];
@@ -373,11 +403,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
       prev.map((s) =>
         s.id === selectedStudent.id
           ? {
-            ...s,
-            status: "Left",
-            leftReason: leaveReason,
-            leftDate: serverTimestamp(),
-          }
+              ...s,
+              status: "Left",
+              leftReason: leaveReason,
+              leftDate: serverTimestamp(),
+            }
           : s,
       ),
     );
@@ -422,11 +452,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
       prev.map((s) =>
         s.id === student.id
           ? {
-            ...s,
-            status: "Left",
-            leftReason: reason,
-            leftDate: serverTimestamp(),
-          }
+              ...s,
+              status: "Left",
+              leftReason: reason,
+              leftDate: serverTimestamp(),
+            }
           : s,
       ),
     );
@@ -445,12 +475,8 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-
-
-
           {/* PROFILE IMAGE */}
           <div className="flex items-center gap-4">
-
             {profile.profileImage ? (
               <img
                 src={profile.profileImage}
@@ -481,9 +507,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
                 </button>
               )}
             </div>
-
           </div>
-
         </div>
       </div>
 
@@ -491,10 +515,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
       <div className="flex flex-wrap gap-4 sm:gap-8 border-b pb-2 mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab("customers")}
-          className={`flex items-center gap-2 pb-2 border-b-2 ${activeTab === "customers"
-            ? "text-orange-500 border-orange-500 font-semibold"
-            : "text-gray-600 border-transparent"
-            }`}
+          className={`flex items-center gap-2 pb-2 border-b-2 ${
+            activeTab === "customers"
+              ? "text-orange-500 border-orange-500 font-semibold"
+              : "text-gray-600 border-transparent"
+          }`}
         >
           <Users size={18} /> Customers
         </button>
@@ -809,10 +834,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
                   key={item}
                   onClick={() => setStatusFilter(item)}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition
-        ${statusFilter === item
-                      ? "bg-orange-500 text-white"
-                      : "bg-gray-200 text-gray-700"
-                    }`}
+        ${
+          statusFilter === item
+            ? "bg-orange-500 text-white"
+            : "bg-gray-200 text-gray-700"
+        }`}
                 >
                   {item}
                 </button>
@@ -824,10 +850,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
           <div className="overflow-x-auto rounded-lg border">
             {/* TABLE HEADER */}
             <div
-              className={`grid ${statusFilter === "Left"
-                ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                } bg-[#E9B489] text-black font-medium px-6 py-3 items-center`}
+              className={`grid ${
+                statusFilter === "Left"
+                  ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                  : "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_100px]"
+              } px-6 py-4 items-start border-t`}
             >
               <p>Name</p>
               <p>Age</p>
@@ -843,30 +870,27 @@ const MyAccountPage = ({ setActiveMenu }) => {
             {filteredStudents.map((student, index) => (
               <div
                 key={student.id}
-                className={`grid ${statusFilter === "Left"
-                  ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                  : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_100px]"
-                  } px-6 py-4 items-center border-t`}
+                className={`grid ${
+                  statusFilter === "Left"
+                    ? "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                    : "grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_100px]"
+                } px-6 py-4 items-start border-t`}
               >
-                <p className="flex items-center">
+                <p className="flex items-center gap-1">
                   <span className="mr-2">{index + 1}.</span>
                   {student.firstName} {student.lastName}
                 </p>
-                <p className="whitespace-pre-line">
-                  {student.age
-                    ?.replace(" years", "") // 👈 removes years
-                    .replace(" Adults", "\nAdults")
-                    .replace(" Teenage", "\nTeenage")}
-                </p>
+                <p className="whitespace-nowrap">{student.age} years</p>
                 <p>{student.belt}</p>
 
                 {/* STATUS BADGE */}
                 <p>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm ${student.status === "Left"
-                      ? "bg-red-400 text-white"
-                      : "bg-green-400 text-black"
-                      }`}
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      student.status === "Left"
+                        ? "bg-red-400 text-white"
+                        : "bg-green-400 text-black"
+                    }`}
                   >
                     {student.status}
                   </span>
@@ -949,30 +973,33 @@ const MyAccountPage = ({ setActiveMenu }) => {
             <div className="grid grid-cols-3 gap-3 mb-5">
               <button
                 onClick={() => setSelectedUploadType("image")}
-                className={`py-2 rounded border ${selectedUploadType === "image"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "image"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Image
               </button>
 
               <button
                 onClick={() => setSelectedUploadType("video")}
-                className={`py-2 rounded border ${selectedUploadType === "video"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "video"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Video
               </button>
 
               <button
                 onClick={() => setSelectedUploadType("reel")}
-                className={`py-2 rounded border ${selectedUploadType === "reel"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-100"
-                  }`}
+                className={`py-2 rounded border ${
+                  selectedUploadType === "reel"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100"
+                }`}
               >
                 Reel
               </button>
@@ -1020,7 +1047,6 @@ const MyAccountPage = ({ setActiveMenu }) => {
             <div className="max-h-[85vh] overflow-y-auto">
               {/* HEADER */}
               <div className="flex justify-between items-center px-6 py-4 border-b bg-orange-50 rounded-t-2xl">
-
                 <div className="flex items-center gap-2">
                   <img
                     src="/edit-icon.png"
@@ -1050,7 +1076,6 @@ const MyAccountPage = ({ setActiveMenu }) => {
                   </h3>
 
                   <div className="flex flex-col sm:flex-row gap-6">
-                    {/* Profile Image */}
                     <div className="flex flex-col items-center">
                       <p className="text-sm font-medium mb-2">Profile Image</p>
 
@@ -1064,6 +1089,16 @@ const MyAccountPage = ({ setActiveMenu }) => {
                           No Image
                         </div>
                       )}
+
+                      <label className="mt-3 cursor-pointer bg-orange-500 text-white px-3 py-1 rounded text-sm">
+                        Change Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleStudentProfileUpload}
+                        />
+                      </label>
                     </div>
 
                     {/* Basic Info */}
@@ -1076,7 +1111,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2"
                           value={editingStudent.firstName || ""}
                           onChange={(e) => {
-                            const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                            const value = e.target.value.replace(
+                              /[^A-Za-z ]/g,
+                              "",
+                            );
                             setEditingStudent({
                               ...editingStudent,
                               firstName: value,
@@ -1093,7 +1131,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2"
                           value={editingStudent.lastName || ""}
                           onChange={(e) => {
-                            const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                            const value = e.target.value.replace(
+                              /[^A-Za-z ]/g,
+                              "",
+                            );
                             setEditingStudent({
                               ...editingStudent,
                               lastName: value,
@@ -1203,7 +1244,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2"
                         value={editingStudent.belt || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingStudent({
                             ...editingStudent,
                             belt: value,
@@ -1219,7 +1263,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <input
                         value={editingStudent.category || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingStudent({
                             ...editingStudent,
                             category: value,
@@ -1236,7 +1283,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <input
                         value={editingStudent.subCategory || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingStudent({
                             ...editingStudent,
                             subCategory: value,
@@ -1253,7 +1303,10 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <input
                         value={editingStudent.sessions || ""}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^A-Za-z ]/g, "");
+                          const value = e.target.value.replace(
+                            /[^A-Za-z ]/g,
+                            "",
+                          );
                           setEditingStudent({
                             ...editingStudent,
                             sessions: value,
