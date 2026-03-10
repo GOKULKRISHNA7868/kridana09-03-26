@@ -60,6 +60,286 @@ const MyAccountPage = ({ setActiveMenu }) => {
   const [pendingFile, setPendingFile] = useState(null);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [sports, setSports] = useState([]);
+  const categories = [
+    "Martial Arts",
+    "Team Ball Sports",
+    "Racket Sports",
+    "Fitness",
+    "Target & Precision Sports",
+    "Equestrian Sports",
+    "Adventure & Outdoor Sports",
+    "Ice Sports",
+    "Aquatic Sports",
+    "Wellness",
+    "Dance",
+  ];
+
+  const subCategoryMap = {
+    "Martial Arts": [
+      "Karate",
+      "Kung Fu",
+      "Krav Maga",
+      "Muay Thai",
+      "Taekwondo",
+      "Judo",
+      "Brazilian Jiu-Jitsu",
+      "Aikido",
+      "Jeet Kune Do",
+      "Capoeira",
+      "Sambo",
+      "Silat",
+      "Kalaripayattu",
+      "Hapkido",
+      "Wing Chun",
+      "Shaolin",
+      "Ninjutsu",
+      "Kickboxing",
+      "Boxing",
+      "Wrestling",
+      "Shorinji Kempo",
+      "Kyokushin",
+      "Goju-ryu",
+      "Shotokan",
+      "Wushu",
+      "Savate",
+      "Lethwei",
+      "Bajiquan",
+      "Hung Gar",
+      "Praying Mantis Kung Fu",
+    ],
+    "Team Ball Sports": [
+      "Football / Soccer",
+      "Basketball",
+      "Handball",
+      "Rugby",
+      "Futsal",
+      "Field Hockey",
+      "Lacrosse",
+      "Gaelic Football",
+      "Volleyball",
+      "Beach Volleyball",
+      "Sepak Takraw",
+      "Roundnet (Spikeball)",
+      "Netball",
+      "Cricket",
+      "Baseball",
+      "Softball",
+      "Wheelchair Rugby",
+      "Dodgeball",
+      "Korfball",
+    ],
+    "Racket Sports": [
+      "Tennis",
+      "Table Tennis",
+      "Badminton",
+      "Squash",
+      "Racquetball",
+      "Padel",
+      "Pickleball",
+      "Platform Tennis",
+      "Real Tennis",
+      "Soft Tennis",
+      "Frontenis",
+      "Speedminton (Crossminton)",
+      "Paddle Tennis (POP Tennis)",
+      "Speed-ball",
+      "Chaza",
+      "Totem Tennis (Swingball)",
+      "Matkot",
+      "Jombola",
+    ],
+    Fitness: [
+      "Gym Workout",
+      "Weight Training",
+      "Bodybuilding",
+      "Powerlifting",
+      "CrossFit",
+      "Calisthenics",
+      "Circuit Training",
+      "HIIT",
+      "Functional Training",
+      "Core Training",
+      "Mobility Training",
+      "Stretching",
+      "Resistance Band Training",
+      "Kettlebell Training",
+      "Boot Camp Training",
+      "Spinning",
+      "Step Fitness",
+      "Pilates",
+      "Yoga",
+    ],
+    "Target & Precision Sports": [
+      "Archery",
+      "Golf",
+      "Bowling",
+      "Darts",
+      "Snooker",
+      "Pool",
+      "Billiards",
+      "Target Shooting",
+      "Clay Pigeon Shooting",
+      "Air Rifle Shooting",
+      "Air Pistol Shooting",
+      "Croquet",
+      "Petanque",
+      "Bocce",
+      "Lawn Bowls",
+      "Carom Billiards",
+      "Nine-Pin Bowling",
+      "Disc Golf",
+      "Kubb",
+      "Pitch and Putt",
+      "Shove Ha’penny",
+      "Toad in the Hole",
+      "Bat and Trap",
+      "Boccia",
+      "Gateball",
+    ],
+    "Equestrian Sports": [
+      "Horse Racing",
+      "Barrel Racing",
+      "Rodeo",
+      "Mounted Archery",
+      "Tent Pegging",
+    ],
+    "Adventure & Outdoor Sports": [
+      "Rock Climbing",
+      "Mountaineering",
+      "Trekking",
+      "Hiking",
+      "Mountain Biking",
+      "Sandboarding",
+      "Orienteering",
+      "Obstacle Course Racing",
+      "Skydiving",
+      "Paragliding",
+      "Hang Gliding",
+      "Parachuting",
+      "Hot-air Ballooning",
+      "Skiing",
+      "Snowboarding",
+      "Ice Climbing",
+      "Heli-skiing",
+      "Bungee Jumping",
+      "BASE Jumping",
+      "Canyoning",
+      "Kite Buggy",
+      "Zorbing",
+      "Zip Lining",
+    ],
+    "Aquatic Sports": [
+      "Swimming",
+      "Water Polo",
+      "Surfing",
+      "Scuba Diving",
+      "Snorkeling",
+      "Freediving",
+      "Kayaking",
+      "Canoeing",
+      "Rowing",
+      "Sailing",
+      "Windsurfing",
+      "Kite Surfing",
+      "Jet Skiing",
+      "Wakeboarding",
+      "Water Skiing",
+      "Stand-up Paddleboarding",
+      "Whitewater Rafting",
+      "Dragon Boat Racing",
+      "Artistic Swimming",
+      "Open Water Swimming",
+    ],
+    "Ice Sports": [
+      "Ice Skating",
+      "Figure Skating",
+      "Ice Hockey",
+      "Speed Skating",
+      "Ice Dance",
+      "Synchronized Skating",
+      "Curling",
+      "Broomball",
+      "Bobsleigh",
+      "Skiboarding",
+      "Ice Dragon Boat Racing",
+      "Ice Cross Downhill",
+    ],
+    Wellness: [
+      "Yoga & Meditation",
+      "Spa & Relaxation",
+      "Mental Wellness",
+      "Fitness",
+      "Nutrition",
+      "Traditional & Alternative Therapies",
+      "Rehabilitation",
+      "Lifestyle Coaching",
+    ],
+    Dance: [
+      "Bharatanatyam",
+      "Kathak",
+      "Kathakali",
+      "Kuchipudi",
+      "Odissi",
+      "Mohiniyattam",
+      "Manipuri",
+      "Sattriya",
+      "Chhau",
+      "Yakshagana",
+      "Lavani",
+      "Ghoomar",
+      "Kalbelia",
+      "Garba",
+      "Dandiya Raas",
+      "Bhangra",
+      "Bihu",
+      "Dollu Kunitha",
+      "Theyyam",
+      "Ballet",
+      "Contemporary",
+      "Hip Hop",
+      "Breakdance",
+      "Jazz Dance",
+      "Tap Dance",
+      "Modern Dance",
+      "Street Dance",
+      "House Dance",
+      "Locking",
+      "Popping",
+      "Krumping",
+      "Waacking",
+      "Voguing",
+      "Salsa",
+      "Bachata",
+      "Merengue",
+      "Cha-Cha",
+      "Rumba",
+      "Samba",
+      "Paso Doble",
+      "Jive",
+      "Tango",
+      "Waltz",
+      "Foxtrot",
+      "Quickstep",
+      "Flamenco",
+      "Irish Stepdance",
+      "Scottish Highland Dance",
+      "Morris Dance",
+      "Hula",
+      "Maori Haka",
+      "African Tribal Dance",
+      "Zumba",
+      "K-Pop Dance",
+      "Shuffle Dance",
+      "Electro Dance",
+      "Pole Dance",
+      "Ballroom Dance",
+      "Line Dance",
+      "Square Dance",
+      "Folk Dance",
+      "Contra Dance",
+    ],
+  };
   /* ================= FETCH PROFILE ================= */
   useEffect(() => {
     const fetchProfile = async () => {
@@ -73,7 +353,11 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
     fetchProfile();
   }, [user]);
-
+  useEffect(() => {
+    if (editingStudent) {
+      setSports(editingStudent.sports || []);
+    }
+  }, [editingStudent]);
   /* ================= FETCH MEDIA ================= */
   useEffect(() => {
     const fetchMedia = async () => {
@@ -188,22 +472,17 @@ const MyAccountPage = ({ setActiveMenu }) => {
 
     try {
       await updateDoc(doc(db, "students", editingStudent.id), {
-        firstName: editingStudent.firstName || "",
-        lastName: editingStudent.lastName || "",
-        email: editingStudent.email || "",
-        phone: editingStudent.phone || "",
-        address: editingStudent.address || "",
-        age: editingStudent.age || "",
-        belt: editingStudent.belt || "",
-        category: editingStudent.category || "",
-        subCategory: editingStudent.subCategory || "",
-        dateOfBirth: editingStudent.dateOfBirth || "",
-        joiningDate: editingStudent.joiningDate || "",
-        monthlyDate: editingStudent.monthlyDate || "",
-        sessions: editingStudent.sessions || "",
-        timings: editingStudent.timings || "",
+        firstName: editingStudent.firstName,
+        lastName: editingStudent.lastName,
+        email: editingStudent.email,
+        phone: editingStudent.phone,
+        address: editingStudent.address,
+        age: editingStudent.age,
+        dateOfBirth: editingStudent.dateOfBirth,
+        joiningDate: editingStudent.joiningDate,
+        monthlyDate: editingStudent.monthlyDate,
+        sports: sports,
       });
-
       setStudents((prev) =>
         prev.map((s) => (s.id === editingStudent.id ? editingStudent : s)),
       );
@@ -213,6 +492,18 @@ const MyAccountPage = ({ setActiveMenu }) => {
     } catch (error) {
       console.error("Update error:", error);
     }
+  };
+  const addSport = () => {
+    setSports((prev) => [
+      ...prev,
+      {
+        category: "",
+        subCategory: "",
+        belt: "",
+        sessions: "",
+        timings: "",
+      },
+    ]);
   };
   const uploadToCloudinary = async (file, type) => {
     setUploading(true);
@@ -498,6 +789,15 @@ const MyAccountPage = ({ setActiveMenu }) => {
           : s,
       ),
     );
+  };
+  const updateSport = (index, field, value) => {
+    const updated = [...sports];
+    updated[index][field] = value;
+    setSports(updated);
+  };
+  const removeSport = (index) => {
+    const updated = sports.filter((_, i) => i !== index);
+    setSports(updated);
   };
   const removeProfileImage = async () => {
     try {
@@ -854,32 +1154,43 @@ const MyAccountPage = ({ setActiveMenu }) => {
                       <label className="block text-sm font-medium mb-1">
                         Category
                       </label>
-                      <input
-                        value={editingTrainer?.category || ""}
+                      <select
+                        value={sport.category}
                         onChange={(e) =>
-                          setEditingTrainer({
-                            ...editingTrainer,
-                            category: e.target.value,
-                          })
+                          updateSport(index, "category", e.target.value)
                         }
-                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
-                      />
+                        className="border rounded-lg px-3 py-2 w-full"
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium mb-1">
                         Sub Category
                       </label>
-                      <input
-                        value={editingTrainer?.subCategory || ""}
+                      <select
+                        value={sport.subCategory}
                         onChange={(e) =>
-                          setEditingTrainer({
-                            ...editingTrainer,
-                            subCategory: e.target.value,
-                          })
+                          updateSport(index, "subCategory", e.target.value)
                         }
-                        className="w-full border rounded-lg px-3 py-2 focus:outline-none"
-                      />
+                        className="border rounded-lg px-3 py-2 w-full"
+                        disabled={!sport.category}
+                      >
+                        <option value="">Select Sub Category</option>
+
+                        {sport.category &&
+                          subCategoryMap[sport.category]?.map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                      </select>
                     </div>
 
                     <div>
@@ -1611,56 +1922,96 @@ const MyAccountPage = ({ setActiveMenu }) => {
                 <h3 className="text-lg font-semibold text-orange-500 mb-4">
                   🏅 Sports Information
                 </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Category
-                    </label>
-                    <input
-                      value={editingStudent?.category || ""}
+                {sports.map((sport, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-2 md:grid-cols-3 gap-3 border p-3 rounded-lg"
+                  >
+                    {/* Category */}
+                    <select
+                      value={sport.category}
                       onChange={(e) =>
-                        setEditingStudent({
-                          ...editingStudent,
-                          category: e.target.value,
-                        })
+                        updateSport(index, "category", e.target.value)
                       }
-                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
-                    />
-                  </div>
+                      className="border rounded-lg px-3 py-2"
+                    >
+                      <option value="">Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Sub Category
-                    </label>
-                    <input
-                      value={editingStudent?.subCategory || ""}
+                    {/* SubCategory */}
+                    <select
+                      value={sport.subCategory}
                       onChange={(e) =>
-                        setEditingStudent({
-                          ...editingStudent,
-                          subCategory: e.target.value,
-                        })
+                        updateSport(index, "subCategory", e.target.value)
                       }
-                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
-                    />
-                  </div>
+                      className="border rounded-lg px-3 py-2"
+                      disabled={!sport.category}
+                    >
+                      <option value="">Sub Category</option>
+                      {sport.category &&
+                        subCategoryMap[sport.category]?.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                    </select>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Belt Level
-                    </label>
-                    <input
-                      value={editingStudent?.belt || ""}
+                    {/* Session */}
+                    <select
+                      value={sport.sessions}
                       onChange={(e) =>
-                        setEditingStudent({
-                          ...editingStudent,
-                          belt: e.target.value,
-                        })
+                        updateSport(index, "sessions", e.target.value)
                       }
-                      className="w-full border rounded-lg px-3 py-2 focus:outline-none"
+                      className="border rounded-lg px-3 py-2"
+                    >
+                      <option value="">Session</option>
+                      <option>Morning</option>
+                      <option>Afternoon</option>
+                      <option>Evening</option>
+                    </select>
+
+                    {/* Timing */}
+                    <input
+                      type="time"
+                      value={sport.timings}
+                      onChange={(e) =>
+                        updateSport(index, "timings", e.target.value)
+                      }
+                      className="border rounded-lg px-3 py-2"
                     />
+
+                    {/* Belt */}
+                    <input
+                      type="text"
+                      placeholder="Belt"
+                      value={sport.belt}
+                      onChange={(e) =>
+                        updateSport(index, "belt", e.target.value)
+                      }
+                      className="border rounded-lg px-3 py-2"
+                    />
+
+                    {/* Remove */}
+                    <button
+                      onClick={() => removeSport(index)}
+                      className="text-red-500 font-semibold"
+                    >
+                      Remove
+                    </button>
                   </div>
-                </div>
+                ))}
+
+                <button
+                  onClick={addSport}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg mt-3"
+                >
+                  + Add Sport
+                </button>
               </div>
 
               {/* ================= TRAINING DETAILS ================= */}

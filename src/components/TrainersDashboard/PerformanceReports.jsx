@@ -306,7 +306,8 @@ export default function StudentPerformanceReport() {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const categoryRef = useRef(null);
   const subCategoryRef = useRef(null);
-const navigate = useNavigate();
+  const [studentSports, setStudentSports] = useState([]);
+  const navigate = useNavigate();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showSubCategoryDropdown, setShowSubCategoryDropdown] = useState(false);
   const [availableSubCategories, setAvailableSubCategories] = useState([]);
@@ -351,7 +352,29 @@ const navigate = useNavigate();
     stamina: { value: "", observation: "" },
     agility: { value: "", observation: "" },
   });
+  useEffect(() => {
+    if (!selectedStudent) return;
 
+    const student = students.find((s) => s.id === selectedStudent);
+
+    if (!student) return;
+
+    const sports = student.sports || [];
+
+    setStudentSports(sports);
+
+    // Auto select first sport
+    if (sports.length > 0) {
+      setSelectedCategory(sports[0].category || "");
+      setSelectedSubCategory(sports[0].subCategory || "");
+
+      setAvailableSubCategories(
+        sports
+          .filter((s) => s.category === sports[0].category)
+          .map((s) => s.subCategory),
+      );
+    }
+  }, [selectedStudent, students]);
   useEffect(() => {
     console.log("[INIT] Component Mounted");
     fetchInstituteStudents();
@@ -434,6 +457,16 @@ const navigate = useNavigate();
     percent: "0%",
   });
   useEffect(() => {
+    if (
+      selectedStudent &&
+      selectedCategory &&
+      selectedSubCategory &&
+      selectedMonth
+    ) {
+      fetchAttendance();
+    }
+  }, [selectedStudent, selectedCategory, selectedSubCategory, selectedMonth]);
+  useEffect(() => {
     const total = Number(manualAttendance.total);
     const present = Number(manualAttendance.present);
 
@@ -450,61 +483,58 @@ const navigate = useNavigate();
   }, [manualAttendance.total, manualAttendance.present]);
   const fetchAttendance = async () => {
     try {
+      if (
+        !selectedStudent ||
+        !selectedCategory ||
+        !selectedSubCategory ||
+        !selectedMonth
+      )
+        return;
+
       const user = auth.currentUser;
-      if (!user || !selectedStudent) return;
+      if (!user) return;
 
-      console.log("[FETCH ATTENDANCE] START");
+      const start = `${selectedMonth}-01`;
+      const end = `${selectedMonth}-31`;
 
-      const start = dayjs(selectedMonth).startOf("month").format("YYYY-MM-DD");
-      const end = dayjs(selectedMonth).endOf("month").format("YYYY-MM-DD");
+      const q = query(
+        collection(db, "trainers", user.uid, "attendance"),
+        where("studentId", "==", selectedStudent),
+        where("category", "==", selectedCategory),
+        where("subCategory", "==", selectedSubCategory),
+      );
 
-      console.log("[MONTH RANGE]", start, "→", end);
+      const snap = await getDocs(q);
 
-      const colPath = `institutes/${user.uid}/attendance`;
+      let total = 0;
+      let present = 0;
 
-      const snap = await getDocs(collection(db, colPath));
+      snap.forEach((doc) => {
+        const data = doc.data();
 
-      const records = [];
+        if (data.date >= start && data.date <= end) {
+          total++;
 
-      snap.forEach((d) => {
-        const data = d.data();
-
-        // 🔥 MATCHING NEW DATA STRUCTURE
-        if (
-          data.studentId === selectedStudent &&
-          typeof data.date === "string" &&
-          data.date >= start &&
-          data.date <= end
-        ) {
-          records.push(data);
+          if (data.status === "present") {
+            present++;
+          }
         }
       });
 
-      console.log("[ATTENDANCE RECORDS]", records);
+      const absent = total - present;
 
-      if (records.length === 0) {
-        console.log("[NO ATTENDANCE DATA]");
-        setAttendancePercent(null);
-        setAttendanceStats({ total: 0, present: 0 });
-        setMetrics((prev) => ({ ...prev, attendance: "No Data" }));
-        return;
-      }
+      const percent = total > 0 ? ((present / total) * 100).toFixed(1) : "0";
 
-      let total = records.length;
+      setManualAttendance({
+        total,
+        present,
+        absent,
+        percent: percent + "%",
+      });
 
-      let present = records.filter(
-        (r) => String(r.status).toLowerCase() === "present",
-      ).length;
-
-      const percent = ((present / total) * 100).toFixed(2);
-
-      console.log("[ATTENDANCE CALC]", { total, present, percent });
-
-      setAttendanceStats({ total, present });
-      setAttendancePercent(percent);
-      setMetrics((prev) => ({ ...prev, attendance: `${percent}%` }));
+      console.log("[ATTENDANCE RESULT]", { total, present, absent, percent });
     } catch (err) {
-      console.error("[ERROR fetchAttendance]", err);
+      console.error("Attendance fetch error:", err);
     }
   };
   const resetFormState = () => {
@@ -564,8 +594,39 @@ const navigate = useNavigate();
 
       if (snap.empty) {
         console.log("[NO EXISTING REPORT]");
-        resetFormState(); // ✅ clear old data
+
         setExistingReportId(null);
+
+        // ❗ DO NOT reset attendance
+        // Only reset metrics fields
+
+        setMetrics({
+          attendance: "",
+          focus: "",
+          skill: "",
+          coach: "",
+          fitness: "",
+          team: "",
+          discipline: "",
+        });
+
+        setMetricObservations({
+          focus: "",
+          skill: "",
+          coach: "",
+          fitness: "",
+          team: "",
+          discipline: "",
+        });
+
+        setPhysicalFitness({
+          speed: { value: "", observation: "" },
+          strength: { value: "", observation: "" },
+          flexibility: { value: "", observation: "" },
+          stamina: { value: "", observation: "" },
+          agility: { value: "", observation: "" },
+        });
+
         return;
       }
 
@@ -852,8 +913,8 @@ const navigate = useNavigate();
 
       {/* FILTERS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-<select
-  className={inputClass}
+        <select
+          className={inputClass}
           value={selectedStudent}
           onChange={(e) => setSelectedStudent(e.target.value)}
         >
@@ -885,7 +946,7 @@ const navigate = useNavigate();
 
           {showCategoryDropdown && (
             <div className="absolute z-50 mt-1 w-full left-0 bg-white border rounded-lg shadow-md max-h-48 overflow-y-auto">
-              {categories.map((cat) => (
+              {[...new Set(studentSports.map((s) => s.category))].map((cat) => (
                 <div
                   key={cat}
                   onClick={() => {
@@ -936,18 +997,20 @@ const navigate = useNavigate();
 
           {showSubCategoryDropdown && (
             <div className="absolute z-50 mt-1 w-full left-0 bg-white border rounded-lg shadow-md max-h-48 overflow-y-auto">
-              {availableSubCategories.map((sub) => (
-                <div
-                  key={sub}
-                  onClick={() => {
-                    setSelectedSubCategory(sub);
-                    setShowSubCategoryDropdown(false);
-                  }}
-                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                >
-                  {sub}
-                </div>
-              ))}
+              {studentSports
+                .filter((s) => s.category === selectedCategory)
+                .map((sport, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedSubCategory(sport.subCategory);
+                      setShowSubCategoryDropdown(false);
+                    }}
+                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                  >
+                    {sport.subCategory}
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -1034,16 +1097,16 @@ const navigate = useNavigate();
                   {key.toUpperCase()}
                 </p>
                 <input
-  type="number"
-  min="0"
-  max="10"
-  className="w-full mt-2 p-2 border border-orange-300 rounded-lg"
-  placeholder="Score Rating (0 - 10)"
-  value={metrics[key]}
-  onChange={(e) =>
-    setMetrics({ ...metrics, [key]: e.target.value })
-  }
-/>
+                  type="number"
+                  min="0"
+                  max="10"
+                  className="w-full mt-2 p-2 border border-orange-300 rounded-lg"
+                  placeholder="Score Rating (0 - 10)"
+                  value={metrics[key]}
+                  onChange={(e) =>
+                    setMetrics({ ...metrics, [key]: e.target.value })
+                  }
+                />
                 <input
                   className="w-full mt-2 p-2 border border-orange-300 rounded-lg"
                   placeholder="Add Observation"
@@ -1105,7 +1168,7 @@ const navigate = useNavigate();
                           }))
                         }
                       />
-                      
+
                       <input
                         className="w-full mt-2 p-2 border border-orange-300 rounded-lg bg-white"
                         placeholder="Observation"
@@ -1133,7 +1196,6 @@ const navigate = useNavigate();
 
       {/* FOOTER */}
       <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10">
-
         <button
           onClick={handleSave}
           disabled={savingReport}

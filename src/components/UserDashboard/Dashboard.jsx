@@ -49,7 +49,7 @@ const Dashboard = () => {
   const [physicalMetrics, setPhysicalMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
-
+  const [events, setEvents] = useState([]);
   const [role, setRole] = useState("student");
   const { selectedStudentUid } = useSelectedStudent();
 
@@ -126,8 +126,43 @@ const Dashboard = () => {
           setLoading(false);
           return;
         }
+        /* 🔹 Fetch Institute Events */
+        const eventsQuery = query(
+          collection(db, "events"),
+          where("basicInfo.instituteId", "==", instituteId),
+        );
 
-        /* 🔹 Query performance data */
+        const eventsSnap = await getDocs(collection(db, "events"));
+
+        console.log("TOTAL EVENTS:", eventsSnap.docs.length);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcomingEvents = eventsSnap.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter((event) => {
+            if (event.instituteId !== instituteId) return false;
+
+            const endDate = event.schedule?.endDate;
+            if (!endDate) return false;
+
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+
+            return end >= today;
+          })
+          .sort(
+            (a, b) =>
+              new Date(a.schedule?.startDate) - new Date(b.schedule?.startDate),
+          );
+
+        console.log("Filtered Events:", upcomingEvents);
+
+        setEvents(upcomingEvents); /* 🔹 Query performance data */
 
         const q = query(
           collection(db, `institutes/${instituteId}/performancestudents`),
@@ -188,6 +223,7 @@ const Dashboard = () => {
 
     fetchData();
   }, [selectedStudentUid]);
+
   /* ---------------- Helpers ---------------- */
 
   const parseScore = (val) => {
@@ -213,8 +249,8 @@ const Dashboard = () => {
             <CalendarDays className="text-orange-500" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">Upcoming Events</h3>
-            <p className="text-gray-500 text-sm">03 Events</p>
+            <h3 className="font-semibold text-lg">Upcming Events</h3>
+            <p className="text-gray-500 text-sm">{events.length} Events</p>
           </div>
         </div>
 
@@ -247,29 +283,25 @@ const Dashboard = () => {
 
           <div className="bg-white border border-orange-400 rounded-lg p-5 h-full">
             <div className="divide-y divide-gray-200">
-              <div className="py-3">
-                <h4 className="font-semibold">Karate Tournament</h4>
-                <p className="text-sm text-gray-500">28th Feb | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
+              {events.length === 0 ? (
+                <p className="text-gray-500 text-sm py-4">No upcoming events</p>
+              ) : (
+                events.slice(0, 5).map((event) => (
+                  <div key={event.id} className="py-3">
+                    <h4 className="font-semibold">
+                      {event.basicInfo?.eventName}
+                    </h4>
 
-              <div className="py-3">
-                <h4 className="font-semibold">Basketball Practice</h4>
-                <p className="text-sm text-gray-500">01st Mar | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
+                    <p className="text-sm text-gray-500">
+                      {event.schedule?.startDate} | {event.schedule?.startTime}
+                    </p>
 
-              <div className="py-3">
-                <h4 className="font-semibold">Tennis Tournament</h4>
-                <p className="text-sm text-gray-500">03rd Mar | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
+                    <p className="text-sm text-gray-500">
+                      {event.schedule?.venueName}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

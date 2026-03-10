@@ -54,7 +54,39 @@ const StudentsAttendancePage = () => {
   const [selectedSession, setSelectedSession] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const categories = useMemo(() => {
+    const set = new Set();
 
+    students.forEach((s) => {
+      if (Array.isArray(s.sports)) {
+        s.sports.forEach((sp) => {
+          if (sp.category) set.add(sp.category);
+        });
+      }
+    });
+
+    return [...set];
+  }, [students]);
+  const subCategories = useMemo(() => {
+    const set = new Set();
+
+    students.forEach((s) => {
+      if (Array.isArray(s.sports)) {
+        s.sports.forEach((sp) => {
+          if (
+            (!selectedCategory || sp.category === selectedCategory) &&
+            sp.subCategory
+          ) {
+            set.add(sp.subCategory);
+          }
+        });
+      }
+    });
+
+    return [...set];
+  }, [students, selectedCategory]);
   const [summary, setSummary] = useState({
     totalStudents: 0,
     presentToday: 0,
@@ -102,7 +134,14 @@ const StudentsAttendancePage = () => {
 
       snap.forEach((d) => {
         const data = d.data();
-        if (data.date === selectedDate) {
+
+        const matchDate = data.date === selectedDate;
+        const matchCategory =
+          !selectedCategory || data.category === selectedCategory;
+        const matchSub =
+          !selectedSubCategory || data.subCategory === selectedSubCategory;
+
+        if (matchDate && matchCategory && matchSub) {
           map[data.studentId] = data.status;
         }
       });
@@ -112,7 +151,7 @@ const StudentsAttendancePage = () => {
     };
 
     fetchData();
-  }, [user, selectedDate]);
+  }, [user, selectedDate, selectedCategory, selectedSubCategory]);
 
   // ==============================
   // FILTER STUDENTS (JOIN + LEFT LOGIC)
@@ -138,10 +177,28 @@ const StudentsAttendancePage = () => {
 
       const matchSession = !selectedSession || s.sessions === selectedSession;
       const matchTime = !selectedTime || s.timings === selectedTime;
+      const matchSport = s.sports?.some((sp) => {
+        const categoryMatch =
+          !selectedCategory || sp.category === selectedCategory;
+        const subCategoryMatch =
+          !selectedSubCategory || sp.subCategory === selectedSubCategory;
+        const sessionMatch =
+          !selectedSession || sp.sessions === selectedSession;
+        const timeMatch = !selectedTime || sp.timings === selectedTime;
 
-      return matchSearch && statusOk && joinedOk && matchSession && matchTime;
+        return categoryMatch && subCategoryMatch && sessionMatch && timeMatch;
+      });
+      return matchSearch && statusOk && joinedOk && matchSport;
     });
-  }, [students, search, selectedDate, selectedSession, selectedTime]);
+  }, [
+    students,
+    search,
+    selectedDate,
+    selectedSession,
+    selectedTime,
+    selectedCategory,
+    selectedSubCategory,
+  ]);
 
   // ==============================
   // SUMMARY
@@ -199,11 +256,13 @@ const StudentsAttendancePage = () => {
             "trainers",
             user.uid,
             "attendance",
-            `${studentId}_${selectedDate}`,
+            `${studentId}_${selectedDate}_${selectedCategory}_${selectedSubCategory}`,
           ),
           {
             trainerId: user.uid,
             studentId,
+            category: selectedCategory || "",
+            subCategory: selectedSubCategory || "",
             session: student?.sessions || "General",
             date: selectedDate,
             day: dayName,
@@ -332,7 +391,34 @@ const StudentsAttendancePage = () => {
                 }`}
               />
             </button>
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setSelectedSubCategory("");
+              }}
+              className="bg-white border border-orange-300 rounded-lg px-4 py-2 font-semibold"
+            >
+              <option value="">Category</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedSubCategory}
+              onChange={(e) => setSelectedSubCategory(e.target.value)}
+              className="bg-white border border-orange-300 rounded-lg px-4 py-2 font-semibold"
+            >
+              <option value="">Sub Category</option>
 
+              {subCategories.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
             {showTimeDropdown && (
               <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow-md max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
                 {TIME_SLOTS.map((t) => (

@@ -61,6 +61,285 @@ const MyAccountPage = ({ setActiveMenu }) => {
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   /* ================= FETCH PROFILE ================= */
+  const categories = [
+    "Martial Arts",
+    "Team Ball Sports",
+    "Racket Sports",
+    "Fitness",
+    "Target & Precision Sports",
+    "Equestrian Sports",
+    "Adventure & Outdoor Sports",
+    "Ice Sports",
+    "Aquatic Sports",
+    "Wellness",
+    "Dance",
+  ];
+
+  const subCategoryMap = {
+    "Martial Arts": [
+      "Karate",
+      "Kung Fu",
+      "Krav Maga",
+      "Muay Thai",
+      "Taekwondo",
+      "Judo",
+      "Brazilian Jiu-Jitsu",
+      "Aikido",
+      "Jeet Kune Do",
+      "Capoeira",
+      "Sambo",
+      "Silat",
+      "Kalaripayattu",
+      "Hapkido",
+      "Wing Chun",
+      "Shaolin",
+      "Ninjutsu",
+      "Kickboxing",
+      "Boxing",
+      "Wrestling",
+      "Shorinji Kempo",
+      "Kyokushin",
+      "Goju-ryu",
+      "Shotokan",
+      "Wushu",
+      "Savate",
+      "Lethwei",
+      "Bajiquan",
+      "Hung Gar",
+      "Praying Mantis Kung Fu",
+    ],
+    "Team Ball Sports": [
+      "Football / Soccer",
+      "Basketball",
+      "Handball",
+      "Rugby",
+      "Futsal",
+      "Field Hockey",
+      "Lacrosse",
+      "Gaelic Football",
+      "Volleyball",
+      "Beach Volleyball",
+      "Sepak Takraw",
+      "Roundnet (Spikeball)",
+      "Netball",
+      "Cricket",
+      "Baseball",
+      "Softball",
+      "Wheelchair Rugby",
+      "Dodgeball",
+      "Korfball",
+    ],
+    "Racket Sports": [
+      "Tennis",
+      "Table Tennis",
+      "Badminton",
+      "Squash",
+      "Racquetball",
+      "Padel",
+      "Pickleball",
+      "Platform Tennis",
+      "Real Tennis",
+      "Soft Tennis",
+      "Frontenis",
+      "Speedminton (Crossminton)",
+      "Paddle Tennis (POP Tennis)",
+      "Speed-ball",
+      "Chaza",
+      "Totem Tennis (Swingball)",
+      "Matkot",
+      "Jombola",
+    ],
+    Fitness: [
+      "Gym Workout",
+      "Weight Training",
+      "Bodybuilding",
+      "Powerlifting",
+      "CrossFit",
+      "Calisthenics",
+      "Circuit Training",
+      "HIIT",
+      "Functional Training",
+      "Core Training",
+      "Mobility Training",
+      "Stretching",
+      "Resistance Band Training",
+      "Kettlebell Training",
+      "Boot Camp Training",
+      "Spinning",
+      "Step Fitness",
+      "Pilates",
+      "Yoga",
+    ],
+    "Target & Precision Sports": [
+      "Archery",
+      "Golf",
+      "Bowling",
+      "Darts",
+      "Snooker",
+      "Pool",
+      "Billiards",
+      "Target Shooting",
+      "Clay Pigeon Shooting",
+      "Air Rifle Shooting",
+      "Air Pistol Shooting",
+      "Croquet",
+      "Petanque",
+      "Bocce",
+      "Lawn Bowls",
+      "Carom Billiards",
+      "Nine-Pin Bowling",
+      "Disc Golf",
+      "Kubb",
+      "Pitch and Putt",
+      "Shove Ha’penny",
+      "Toad in the Hole",
+      "Bat and Trap",
+      "Boccia",
+      "Gateball",
+    ],
+    "Equestrian Sports": [
+      "Horse Racing",
+      "Barrel Racing",
+      "Rodeo",
+      "Mounted Archery",
+      "Tent Pegging",
+    ],
+    "Adventure & Outdoor Sports": [
+      "Rock Climbing",
+      "Mountaineering",
+      "Trekking",
+      "Hiking",
+      "Mountain Biking",
+      "Sandboarding",
+      "Orienteering",
+      "Obstacle Course Racing",
+      "Skydiving",
+      "Paragliding",
+      "Hang Gliding",
+      "Parachuting",
+      "Hot-air Ballooning",
+      "Skiing",
+      "Snowboarding",
+      "Ice Climbing",
+      "Heli-skiing",
+      "Bungee Jumping",
+      "BASE Jumping",
+      "Canyoning",
+      "Kite Buggy",
+      "Zorbing",
+      "Zip Lining",
+    ],
+    "Aquatic Sports": [
+      "Swimming",
+      "Water Polo",
+      "Surfing",
+      "Scuba Diving",
+      "Snorkeling",
+      "Freediving",
+      "Kayaking",
+      "Canoeing",
+      "Rowing",
+      "Sailing",
+      "Windsurfing",
+      "Kite Surfing",
+      "Jet Skiing",
+      "Wakeboarding",
+      "Water Skiing",
+      "Stand-up Paddleboarding",
+      "Whitewater Rafting",
+      "Dragon Boat Racing",
+      "Artistic Swimming",
+      "Open Water Swimming",
+    ],
+    "Ice Sports": [
+      "Ice Skating",
+      "Figure Skating",
+      "Ice Hockey",
+      "Speed Skating",
+      "Ice Dance",
+      "Synchronized Skating",
+      "Curling",
+      "Broomball",
+      "Bobsleigh",
+      "Skiboarding",
+      "Ice Dragon Boat Racing",
+      "Ice Cross Downhill",
+    ],
+    Wellness: [
+      "Yoga & Meditation",
+      "Spa & Relaxation",
+      "Mental Wellness",
+      "Fitness",
+      "Nutrition",
+      "Traditional & Alternative Therapies",
+      "Rehabilitation",
+      "Lifestyle Coaching",
+    ],
+    Dance: [
+      "Bharatanatyam",
+      "Kathak",
+      "Kathakali",
+      "Kuchipudi",
+      "Odissi",
+      "Mohiniyattam",
+      "Manipuri",
+      "Sattriya",
+      "Chhau",
+      "Yakshagana",
+      "Lavani",
+      "Ghoomar",
+      "Kalbelia",
+      "Garba",
+      "Dandiya Raas",
+      "Bhangra",
+      "Bihu",
+      "Dollu Kunitha",
+      "Theyyam",
+      "Ballet",
+      "Contemporary",
+      "Hip Hop",
+      "Breakdance",
+      "Jazz Dance",
+      "Tap Dance",
+      "Modern Dance",
+      "Street Dance",
+      "House Dance",
+      "Locking",
+      "Popping",
+      "Krumping",
+      "Waacking",
+      "Voguing",
+      "Salsa",
+      "Bachata",
+      "Merengue",
+      "Cha-Cha",
+      "Rumba",
+      "Samba",
+      "Paso Doble",
+      "Jive",
+      "Tango",
+      "Waltz",
+      "Foxtrot",
+      "Quickstep",
+      "Flamenco",
+      "Irish Stepdance",
+      "Scottish Highland Dance",
+      "Morris Dance",
+      "Hula",
+      "Maori Haka",
+      "African Tribal Dance",
+      "Zumba",
+      "K-Pop Dance",
+      "Shuffle Dance",
+      "Electro Dance",
+      "Pole Dance",
+      "Ballroom Dance",
+      "Line Dance",
+      "Square Dance",
+      "Folk Dance",
+      "Contra Dance",
+    ],
+  };
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.uid) return;
@@ -881,7 +1160,7 @@ const MyAccountPage = ({ setActiveMenu }) => {
                   {student.firstName} {student.lastName}
                 </p>
                 <p className="whitespace-nowrap">{student.age} years</p>
-                <p>{student.belt}</p>
+                <p>{student.sports?.[0]?.belt || "-"}</p>
 
                 {/* STATUS BADGE */}
                 <p>
@@ -917,7 +1196,19 @@ const MyAccountPage = ({ setActiveMenu }) => {
                   {/* EDIT BUTTON */}
                   <button
                     onClick={() => {
-                      setEditingStudent(student);
+                      setEditingStudent({
+                        ...student,
+                        sports: student.sports || [
+                          {
+                            category: "",
+                            subCategory: "",
+                            belt: "",
+                            sessions: "",
+                            timings: "",
+                          },
+                        ],
+                      });
+
                       setShowEditStudentModal(true);
                     }}
                     className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-md transition"
@@ -1214,160 +1505,167 @@ const MyAccountPage = ({ setActiveMenu }) => {
                 </div>
 
                 {/* ================= TRAINING SECTION ================= */}
-                <div>
-                  <h3 className="text-lg font-semibold text-orange-500 mb-4">
-                    🏋 Training Details
-                  </h3>
+                <h3 className="text-lg font-semibold text-orange-500 mb-4">
+                  🏋 Training Details
+                </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Age Category
-                      </label>
-                      <input
-                        value={editingStudent.age || ""}
-                        onChange={(e) =>
-                          setEditingStudent({
-                            ...editingStudent,
-                            age: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
+                {(editingStudent.sports || []).map((sport, index) => (
+                  <div
+                    key={index}
+                    className="border rounded-lg p-4 mb-4 bg-gray-50"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* CATEGORY */}
+                      <div>
+                        <label className="text-sm font-medium">Category</label>
+                        <select
+                          value={sport.category || ""}
+                          onChange={(e) => {
+                            const updated = [...editingStudent.sports];
+
+                            updated[index].category = e.target.value;
+
+                            // reset subcategory when category changes
+                            updated[index].subCategory = "";
+
+                            setEditingStudent({
+                              ...editingStudent,
+                              sports: updated,
+                            });
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        >
+                          <option value="">Select Category</option>
+
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* SUBCATEGORY */}
+                      <div>
+                        <label className="text-sm font-medium">
+                          Sub Category
+                        </label>
+                        <select
+                          value={sport.subCategory || ""}
+                          onChange={(e) => {
+                            const updated = [...editingStudent.sports];
+                            updated[index].subCategory = e.target.value;
+
+                            setEditingStudent({
+                              ...editingStudent,
+                              sports: updated,
+                            });
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        >
+                          <option value="">Select Sub Category</option>
+
+                          {(subCategoryMap[sport.category] || []).map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* BELT */}
+                      <div>
+                        <label className="text-sm font-medium">Belt</label>
+                        <input
+                          value={sport.belt || ""}
+                          onChange={(e) => {
+                            const updated = [...editingStudent.sports];
+                            updated[index].belt = e.target.value;
+
+                            setEditingStudent({
+                              ...editingStudent,
+                              sports: updated,
+                            });
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        />
+                      </div>
+
+                      {/* SESSION */}
+                      <div>
+                        <label className="text-sm font-medium">Sessions</label>
+                        <input
+                          value={sport.sessions || ""}
+                          onChange={(e) => {
+                            const updated = [...editingStudent.sports];
+                            updated[index].sessions = e.target.value;
+
+                            setEditingStudent({
+                              ...editingStudent,
+                              sports: updated,
+                            });
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        />
+                      </div>
+
+                      {/* TIMING */}
+                      <div>
+                        <label className="text-sm font-medium">Timings</label>
+                        <input
+                          value={sport.timings || ""}
+                          onChange={(e) => {
+                            const updated = [...editingStudent.sports];
+                            updated[index].timings = e.target.value;
+
+                            setEditingStudent({
+                              ...editingStudent,
+                              sports: updated,
+                            });
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Belt
-                      </label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editingStudent.belt || ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(
-                            /[^A-Za-z ]/g,
-                            "",
-                          );
-                          setEditingStudent({
-                            ...editingStudent,
-                            belt: value,
-                          });
-                        }}
-                      />
-                    </div>
+                    {/* REMOVE BUTTON */}
+                    <button
+                      onClick={() => {
+                        const updated = editingStudent.sports.filter(
+                          (_, i) => i !== index,
+                        );
 
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Category
-                      </label>
-                      <input
-                        value={editingStudent.category || ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(
-                            /[^A-Za-z ]/g,
-                            "",
-                          );
-                          setEditingStudent({
-                            ...editingStudent,
-                            category: value,
-                          });
-                        }}
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Sub Category
-                      </label>
-                      <input
-                        value={editingStudent.subCategory || ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(
-                            /[^A-Za-z ]/g,
-                            "",
-                          );
-                          setEditingStudent({
-                            ...editingStudent,
-                            subCategory: value,
-                          });
-                        }}
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Sessions
-                      </label>
-                      <input
-                        value={editingStudent.sessions || ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(
-                            /[^A-Za-z ]/g,
-                            "",
-                          );
-                          setEditingStudent({
-                            ...editingStudent,
-                            sessions: value,
-                          });
-                        }}
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Timings
-                      </label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editingStudent.timings || ""}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9:]/g, "");
-                          setEditingStudent({
-                            ...editingStudent,
-                            timings: value,
-                          });
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Fees
-                      </label>
-                      <input
-                        value={editingStudent.monthlyFee || ""}
-                        onChange={(e) =>
-                          setEditingStudent({
-                            ...editingStudent,
-                            fees: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Joining Date
-                      </label>
-                      <input
-                        type="date"
-                        value={editingStudent.joiningDate || ""}
-                        onChange={(e) =>
-                          setEditingStudent({
-                            ...editingStudent,
-                            joiningDate: e.target.value,
-                          })
-                        }
-                        className="w-full border rounded-lg px-3 py-2"
-                      />
-                    </div>
+                        setEditingStudent({
+                          ...editingStudent,
+                          sports: updated,
+                        });
+                      }}
+                      className="mt-3 text-red-500 text-sm"
+                    >
+                      Remove Sport
+                    </button>
                   </div>
-                </div>
-
+                ))}
+                <button
+                  onClick={() => {
+                    setEditingStudent({
+                      ...editingStudent,
+                      sports: [
+                        ...(editingStudent.sports || []),
+                        {
+                          category: "",
+                          subCategory: "",
+                          belt: "",
+                          sessions: "",
+                          timings: "",
+                        },
+                      ],
+                    });
+                  }}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-md"
+                >
+                  + Add Sport
+                </button>
                 {/* ================= AADHAAR SECTION ================= */}
                 <div>
                   <h3 className="text-lg font-semibold text-orange-500 mb-4">

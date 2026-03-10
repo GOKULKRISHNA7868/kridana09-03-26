@@ -54,7 +54,8 @@ const StudentsAttendancePage = () => {
   const [selectedSession, setSelectedSession] = useState("");
   const [selectedDate, setSelectedDate] = useState(today);
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
-
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [summary, setSummary] = useState({
     totalStudents: 0,
     presentToday: 0,
@@ -98,8 +99,13 @@ const StudentsAttendancePage = () => {
 
       snap.forEach((d) => {
         const data = d.data();
-        if (data.date === selectedDate) {
-          map[data.studentId] = data.status;
+        if (
+          data.date === selectedDate &&
+          (!selectedCategory || data.category === selectedCategory) &&
+          (!selectedSubCategory || data.subCategory === selectedSubCategory)
+        ) {
+          const key = `${data.studentId}_${data.category}_${data.subCategory}`;
+          map[key] = data.status;
         }
       });
 
@@ -108,7 +114,7 @@ const StudentsAttendancePage = () => {
     };
 
     fetchData();
-  }, [user, selectedDate]);
+  }, [user, selectedDate, selectedCategory, selectedSubCategory]);
 
   // Filter Students (JOIN DATE + LEFT DATE LOGIC)
   const filteredStudents = useMemo(() => {
@@ -116,24 +122,46 @@ const StudentsAttendancePage = () => {
       const name = `${s.firstName} ${s.lastName}`.toLowerCase();
       const matchSearch = name.includes(search.toLowerCase());
 
-      // ✅ Status rule
-      // show if:
-      // - status field not present
-      // - status === "Active"
-      // hide if:
-      // - status === "Left"
       const statusOk = !s.status || s.status === "Active";
-
-      // ✅ Joining rule
       const joinedOk = !s.joiningDate || s.joiningDate <= selectedDate;
 
-      const matchSession = !selectedSession || s.sessions === selectedSession;
-      const matchTime = !selectedTime || s.timings === selectedTime;
+      let sportMatch = true;
 
-      return matchSearch && statusOk && joinedOk && matchSession && matchTime;
+      if (selectedCategory) {
+        sportMatch =
+          s.sports &&
+          s.sports.some(
+            (sp) =>
+              sp.category === selectedCategory &&
+              (!selectedSubCategory || sp.subCategory === selectedSubCategory),
+          );
+      }
+
+      const matchSession =
+        !selectedSession ||
+        s.sessions === selectedSession ||
+        (s.sports && s.sports.some((sp) => sp.sessions === selectedSession));
+      const matchTime =
+        !selectedTime ||
+        (s.sports && s.sports.some((sp) => sp.timings === selectedTime));
+      return (
+        matchSearch &&
+        statusOk &&
+        joinedOk &&
+        sportMatch &&
+        matchSession &&
+        matchTime
+      );
     });
-  }, [students, search, selectedDate, selectedSession, selectedTime]);
-
+  }, [
+    students,
+    search,
+    selectedDate,
+    selectedCategory,
+    selectedSubCategory,
+    selectedSession,
+    selectedTime,
+  ]);
   // Summary
   useEffect(() => {
     const total = filteredStudents.length;
@@ -163,49 +191,80 @@ const StudentsAttendancePage = () => {
 
   // Save Attendance
   const saveAttendance = (student, status) => {
+    const key = `${student.uid}_${selectedCategory}_${selectedSubCategory}`;
+
     setDraftAttendance((prev) => ({
       ...prev,
-      [student.uid]: status,
+      [key]: status,
     }));
   };
+  const categories = useMemo(() => {
+    const set = new Set();
 
+    students.forEach((s) => {
+      if (Array.isArray(s.sports)) {
+        s.sports.forEach((sp) => {
+          if (sp.category) set.add(sp.category);
+        });
+      }
+    });
+
+    return Array.from(set);
+  }, [students]);
+  const subCategories = useMemo(() => {
+    const set = new Set();
+
+    students.forEach((s) => {
+      if (Array.isArray(s.sports)) {
+        s.sports.forEach((sp) => {
+          if (sp.category === selectedCategory && sp.subCategory) {
+            set.add(sp.subCategory);
+          }
+        });
+      }
+    });
+
+    return Array.from(set);
+  }, [students, selectedCategory]);
   const handleSaveAll = async () => {
     const dayName = getDayName(selectedDate);
 
-    const promises = Object.entries(draftAttendance).map(
-      ([studentId, status]) => {
-        const student = Array.isArray(students)
-          ? students.find((s) => s.uid === studentId)
-          : null;
+    const promises = Object.entries(draftAttendance).map(([key, status]) => {
+      const [studentId] = key.split("_");
 
-        return setDoc(
-          doc(
-            db,
-            "institutes",
-            user.uid,
-            "attendance",
-            `${studentId}_${selectedDate}`,
-          ),
-          {
-            instituteId: user.uid,
-            studentId,
-            session: student?.sessions || "General",
-            date: selectedDate,
-            day: dayName,
-            time: selectedTime || "",
-            status,
-            updatedAt: serverTimestamp(),
-            createdAt: serverTimestamp(),
-          },
-          { merge: true },
-        );
-      },
-    );
+      const student = students.find((s) => s.uid === studentId);
+
+      return setDoc(
+        doc(
+          db,
+          "institutes",
+          user.uid,
+          "attendance",
+          `${studentId}_${selectedDate}_${selectedCategory}_${selectedSubCategory}`,
+        ),
+        {
+          instituteId: user.uid,
+          studentId,
+          category: selectedCategory,
+          subCategory: selectedSubCategory,
+          session: student?.sessions || "General",
+          date: selectedDate,
+          day: dayName,
+          time: selectedTime || "",
+          status,
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
 
     await Promise.all(promises);
     alert("Attendance saved ✅");
   };
-
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedSession, selectedCategory, selectedSubCategory]);
   const handleCancel = () => {
     setDraftAttendance({ ...attendance });
   };
@@ -223,7 +282,8 @@ const StudentsAttendancePage = () => {
     let csv = "Student Name,Session,Date,Status\n";
 
     filteredStudents.forEach((student) => {
-      const status = draftAttendance[student.uid] || "Not Marked";
+      const key = `${student.uid}_${selectedCategory}_${selectedSubCategory}`;
+      const status = draftAttendance[key] || "Not Marked";
       csv += `${student.firstName} ${student.lastName},${student.sessions || "-"},${selectedDate},${status}\n`;
     });
 
@@ -284,7 +344,6 @@ const StudentsAttendancePage = () => {
       <div className="bg-white border border-orange-200 rounded-xl p-4 flex justify-between items-center mb-6">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
           <div className="text-lg font-bold text-black">Attendance Records</div>
-
           <select
             value={selectedSession}
             onChange={(e) => setSelectedSession(e.target.value)}
@@ -297,7 +356,34 @@ const StudentsAttendancePage = () => {
               </option>
             ))}
           </select>
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value);
+              setSelectedSubCategory("");
+            }}
+            className="bg-white border border-orange-300 rounded-lg px-4 py-2 font-semibold"
+          >
+            <option value="">Category</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
 
+          <select
+            value={selectedSubCategory}
+            onChange={(e) => setSelectedSubCategory(e.target.value)}
+            className="bg-white border border-orange-300 rounded-lg px-4 py-2 font-semibold"
+          >
+            <option value="">Sub Category</option>
+            {subCategories.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
           <div ref={timeRef} className="relative w-full sm:min-w-[200px]">
             <button
               onClick={() => setShowTimeDropdown(!showTimeDropdown)}
@@ -308,6 +394,7 @@ const StudentsAttendancePage = () => {
                   ? TIME_SLOTS.find((t) => t.value === selectedTime)?.label
                   : "Timings"}
               </span>
+
               <ChevronDown
                 size={18}
                 className={`transition-transform ${
@@ -366,7 +453,8 @@ const StudentsAttendancePage = () => {
 
         <div className="bg-white min-h-[300px]">
           {paginatedStudents.map((s, index) => {
-            const record = draftAttendance[s.uid];
+            const key = `${s.uid}_${selectedCategory}_${selectedSubCategory}`;
+            const record = draftAttendance[key];
 
             return (
               <div

@@ -72,7 +72,12 @@ export default function Login() {
         navigate("/"); // landing page or main index
         return;
       }
+      const studentSnap = await getDoc(doc(db, "students", user.uid));
 
+      if (studentSnap.exists() && studentSnap.data().defaultPassword) {
+        navigate("/reset-password"); // force reset page
+        return;
+      }
       // ✅ FINAL REDIRECT FOR OTHERS
       if (actualRole === "trainer") navigate("/trainers/dashboard");
       else if (actualRole === "institute") navigate("/institutes/dashboard");

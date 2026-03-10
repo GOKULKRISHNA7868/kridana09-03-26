@@ -590,7 +590,14 @@ export default function AddTrainerDetailsPage() {
 
     return urls;
   };
-
+  const sportObject = {
+    category: formData.category,
+    subCategory: formData.subCategory,
+    belt: formData.category === "Martial Arts" ? formData.belt : "",
+    skillLevel: formData.category !== "Martial Arts" ? formData.skillLevel : "",
+    sessions: formData.sessions,
+    timings: formData.timings,
+  };
   const handleSubmit = async () => {
     if (isSaving) return; // 🚫 prevent double click
 
@@ -642,13 +649,15 @@ export default function AddTrainerDetailsPage() {
 
       await setDoc(doc(db, "students", customerUid), {
         ...rest,
-        aadharFilesCount: aadharFiles.length,
+        sports: [sportObject], // array
         profileImageUrl,
         aadharUrls,
+        aadharFilesCount: aadharFiles.length,
         customerUid,
         instituteId: user.uid,
         role: "customer",
         monthlyFee: Number(formData.monthlyFee),
+        defaultPassword: true,
         createdAt: serverTimestamp(),
       });
 

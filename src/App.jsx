@@ -70,6 +70,7 @@ import ChatBox from "./pages/ChatBox.jsx";
 import PaymentSuccess from "./components/PaymentSuccess.jsx";
 import PaymentFailed from "./components/PaymentFailed.jsx";
 import { SelectedStudentProvider } from "./context/SelectedStudentContext";
+import ResetPassword from "./pages/ResetPassword";
 function App() {
   const location = useLocation();
 
@@ -166,6 +167,7 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/paymentpolicy" element={<PaymentPolicy />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route
                   path="/customer-policies"
                   element={<CustomerCentricPolicies />}

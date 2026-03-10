@@ -49,6 +49,7 @@ const Dashboard = () => {
   const [physicalMetrics, setPhysicalMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const { selectedStudentUid } = useSelectedStudent();
+  const [events, setEvents] = useState([]);
   /* ---------------- FETCH DATA ---------------- */
 
   /* ---------------- FETCH DATA ---------------- */
@@ -95,7 +96,37 @@ const Dashboard = () => {
           collection(db, `/trainers/${trainerId}/performancestudents`),
           where("studentId", "==", studentUid),
         );
+        /* -------- FETCH TRAINER EVENTS -------- */
 
+        const eventsQuery = query(
+          collection(db, "events"),
+          where("instituteId", "==", trainerId),
+        );
+
+        const eventsSnap = await getDocs(eventsQuery);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcomingEvents = eventsSnap.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter((event) => {
+            if (!event.schedule?.endDate) return false;
+
+            const endDate = new Date(event.schedule.endDate);
+            endDate.setHours(23, 59, 59, 999);
+
+            return endDate >= today;
+          })
+          .sort(
+            (a, b) =>
+              new Date(a.schedule.startDate) - new Date(b.schedule.startDate),
+          );
+
+        setEvents(upcomingEvents);
         const snap = await getDocs(q);
 
         if (snap.empty) {
@@ -187,27 +218,7 @@ const Dashboard = () => {
           </div>
           <div>
             <h3 className="font-semibold text-lg">Upcoming Events</h3>
-            <p className="text-gray-500 text-sm">03 Events</p>
-          </div>
-        </div>
-
-        <div className="bg-white border border-orange-400 rounded-lg p-5 flex items-center gap-4">
-          <div className="bg-orange-100 p-3 rounded-md">
-            <Activity className="text-orange-500" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">Active Sports</h3>
-            <p className="text-gray-500 text-sm">03 Sports</p>
-          </div>
-        </div>
-
-        <div className="bg-white border border-orange-400 rounded-lg p-5 flex items-center gap-4">
-          <div className="bg-orange-100 p-3 rounded-md">
-            <Clock className="text-orange-500" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">Training Sessions</h3>
-            <p className="text-gray-500 text-sm">10 Sessions</p>
+            <p className="text-gray-500 text-sm">{events.length} Events</p>
           </div>
         </div>
       </div>
@@ -219,31 +230,25 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold mb-4">Upcoming Events</h2>
 
           <div className="bg-white border border-orange-400 rounded-lg p-5 h-full">
-            <div className="divide-y divide-gray-200">
-              <div className="py-3">
-                <h4 className="font-semibold">Karate Tournament</h4>
-                <p className="text-sm text-gray-500">28th Feb | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
+            {events.length === 0 ? (
+              <p className="text-gray-500 text-sm py-4">No upcoming events</p>
+            ) : (
+              events.slice(0, 5).map((event) => (
+                <div key={event.id} className="py-3">
+                  <h4 className="font-semibold">
+                    {event.basicInfo?.eventName}
+                  </h4>
 
-              <div className="py-3">
-                <h4 className="font-semibold">Basketball Practice</h4>
-                <p className="text-sm text-gray-500">01st Mar | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
+                  <p className="text-sm text-gray-500">
+                    {event.schedule?.startDate} | {event.schedule?.startTime}
+                  </p>
 
-              <div className="py-3">
-                <h4 className="font-semibold">Tennis Tournament</h4>
-                <p className="text-sm text-gray-500">03rd Mar | 07:00pm</p>
-                <p className="text-sm text-gray-500">
-                  GRK College of Hyderabad
-                </p>
-              </div>
-            </div>
+                  <p className="text-sm text-gray-500">
+                    {event.schedule?.venueName}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

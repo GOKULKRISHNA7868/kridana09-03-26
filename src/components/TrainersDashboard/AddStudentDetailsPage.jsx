@@ -624,12 +624,24 @@ export default function AddTrainerDetailsPage() {
       if (aadharFiles?.length) {
         aadharUrls = await uploadMultipleToCloudinary(aadharFiles);
       }
-
+      const sportData = {
+        category: formData.category,
+        subCategory: formData.subCategory,
+        belt: formData.category === "Martial Arts" ? formData.belt : "",
+        skillLevel:
+          formData.category !== "Martial Arts" ? formData.skillLevel : "",
+        sessions: formData.sessions,
+        timings: formData.timings,
+      };
       await setDoc(doc(db, "trainerstudents", studentUid), {
         ...rest,
+
+        sports: [sportData], // ✅ sports array
+
         aadharFilesCount: aadharFiles.length,
         profileImageUrl,
         aadharUrls,
+
         studentUid,
         trainerId: user.uid,
         role: "student",

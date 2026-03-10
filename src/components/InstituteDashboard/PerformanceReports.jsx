@@ -305,14 +305,14 @@ export default function StudentPerformanceReport() {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const categoryRef = useRef(null);
   const subCategoryRef = useRef(null);
-const [belt, setBelt] = useState("");
+  const [belt, setBelt] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showSubCategoryDropdown, setShowSubCategoryDropdown] = useState(false);
   const [availableSubCategories, setAvailableSubCategories] = useState([]);
   const [attendancePercent, setAttendancePercent] = useState(null);
   /* 🔽 AUTO-FILL EXISTING REPORT STATE */
   const [existingReportId, setExistingReportId] = useState(null);
-
+  const [studentSports, setStudentSports] = useState([]);
   const [attendanceStats, setAttendanceStats] = useState({
     total: 0,
     present: 0,
@@ -360,25 +360,33 @@ const [belt, setBelt] = useState("");
     console.log("[MONTH CHANGE]", selectedMonth);
     filterByMonth();
   }, [selectedMonth, students]);
+  useEffect(() => {
+    if (!selectedStudent) return;
 
+    const student = students.find((s) => s.id === selectedStudent);
+
+    if (!student) return;
+
+    const sports = student.sports || [];
+
+    setStudentSports(sports);
+
+    if (sports.length > 0) {
+      setSelectedCategory(sports[0].category || "");
+      setSelectedSubCategory(sports[0].subCategory || "");
+      setBelt(sports[0].belt || "");
+    }
+  }, [selectedStudent]);
   useEffect(() => {
     if (
       selectedStudent &&
-      selectedMonth &&
       selectedCategory &&
-      selectedSubCategory
+      selectedSubCategory &&
+      selectedMonth
     ) {
-      console.log("[AUTO FETCH TRIGGERED]", {
-        selectedStudent,
-        selectedMonth,
-        selectedCategory,
-        selectedSubCategory,
-      });
-
       fetchAttendance();
-      fetchExistingPerformance();
     }
-  }, [selectedStudent, selectedMonth, selectedCategory, selectedSubCategory]);
+  }, [selectedStudent, selectedCategory, selectedSubCategory, selectedMonth]);
   const fetchInstituteStudents = async () => {
     try {
       const user = auth.currentUser;
@@ -450,60 +458,48 @@ const [belt, setBelt] = useState("");
   const fetchAttendance = async () => {
     try {
       const user = auth.currentUser;
-      if (!user || !selectedStudent) return;
-
-      console.log("[FETCH ATTENDANCE] START");
+      if (!user) return;
 
       const start = dayjs(selectedMonth).startOf("month").format("YYYY-MM-DD");
       const end = dayjs(selectedMonth).endOf("month").format("YYYY-MM-DD");
 
-      console.log("[MONTH RANGE]", start, "→", end);
-
       const colPath = `institutes/${user.uid}/attendance`;
 
-      const snap = await getDocs(collection(db, colPath));
+      const q = query(
+        collection(db, colPath),
+        where("studentId", "==", selectedStudent),
+        where("category", "==", selectedCategory),
+        where("subCategory", "==", selectedSubCategory),
+      );
 
-      const records = [];
+      const snap = await getDocs(q);
 
-      snap.forEach((d) => {
-        const data = d.data();
+      let total = 0;
+      let present = 0;
 
-        // 🔥 MATCHING NEW DATA STRUCTURE
-        if (
-          data.studentId === selectedStudent &&
-          typeof data.date === "string" &&
-          data.date >= start &&
-          data.date <= end
-        ) {
-          records.push(data);
+      snap.forEach((doc) => {
+        const data = doc.data();
+
+        if (data.date >= start && data.date <= end) {
+          total++;
+
+          if (data.status?.toLowerCase() === "present") {
+            present++;
+          }
         }
       });
 
-      console.log("[ATTENDANCE RECORDS]", records);
+      const absent = total - present;
+      const percent = total > 0 ? ((present / total) * 100).toFixed(2) : "0.00";
 
-      if (records.length === 0) {
-        console.log("[NO ATTENDANCE DATA]");
-        setAttendancePercent(null);
-        setAttendanceStats({ total: 0, present: 0 });
-        setMetrics((prev) => ({ ...prev, attendance: "No Data" }));
-        return;
-      }
-
-      let total = records.length;
-
-      let present = records.filter(
-        (r) => String(r.status).toLowerCase() === "present",
-      ).length;
-
-      const percent = ((present / total) * 100).toFixed(2);
-
-      console.log("[ATTENDANCE CALC]", { total, present, percent });
-
-      setAttendanceStats({ total, present });
-      setAttendancePercent(percent);
-      setMetrics((prev) => ({ ...prev, attendance: `${percent}%` }));
+      setManualAttendance({
+        total,
+        present,
+        absent,
+        percent: percent + "%",
+      });
     } catch (err) {
-      console.error("[ERROR fetchAttendance]", err);
+      console.error("Attendance fetch error:", err);
     }
   };
   const resetFormState = () => {
@@ -646,6 +642,25 @@ const [belt, setBelt] = useState("");
       setLoadingReport(false);
     }
   };
+  useEffect(() => {
+    if (!selectedStudent) return;
+
+    const student = students.find((s) => s.id === selectedStudent);
+
+    if (!student || !student.sports) return;
+
+    const sports = student.sports || [];
+
+    if (sports.length > 0) {
+      const sport = sports[0]; // first sport
+
+      setSelectedCategory(sport.category || "");
+      setSelectedSubCategory(sport.subCategory || "");
+      setBelt(sport.belt || "");
+
+      setAvailableSubCategories(subCategoryMap[sport.category] || []);
+    }
+  }, [selectedStudent]);
   const handleSave = async () => {
     try {
       if (savingReport) return; // ✅ block multi-click
@@ -675,10 +690,16 @@ const [belt, setBelt] = useState("");
         return;
       }
       // 🔒 METRIC VALIDATION
-      const metricKeys = ["focus", "skill", "coach", "fitness", "team", "discipline"];
+      const metricKeys = [
+        "focus",
+        "skill",
+        "coach",
+        "fitness",
+        "team",
+        "discipline",
+      ];
 
       for (let key of metricKeys) {
-
         if (!metrics[key]) {
           alert(`${key.toUpperCase()} score is required`);
           return;
@@ -688,7 +709,6 @@ const [belt, setBelt] = useState("");
           alert(`${key.toUpperCase()} must be numeric`);
           return;
         }
-
       }
       const totalNum = Number(manualAttendance.total);
       const presentNum = Number(manualAttendance.present);
@@ -866,26 +886,26 @@ const [belt, setBelt] = useState("");
 
       {/* FILTERS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 items-center">
-<div className="relative">
-  <select
-    className={`${inputClass} appearance-none pr-8`}
-    value={selectedStudent}
-    onChange={(e) => setSelectedStudent(e.target.value)}
-  >
-    <option value="">Select Student Name*</option>
+        <div className="relative">
+          <select
+            className={`${inputClass} appearance-none pr-8`}
+            value={selectedStudent}
+            onChange={(e) => setSelectedStudent(e.target.value)}
+          >
+            <option value="">Select Student Name*</option>
 
-    {filteredStudents?.map((s) => (
-      <option key={s.id} value={s.id}>
-        {s.firstName} {s.lastName}
-      </option>
-    ))}
-  </select>
+            {filteredStudents?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.firstName} {s.lastName}
+              </option>
+            ))}
+          </select>
 
-  <ChevronDown
-    size={18}
-    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-  />
-</div>
+          <ChevronDown
+            size={18}
+            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        </div>
 
         <div ref={categoryRef} className="relative">
           <button
@@ -899,28 +919,25 @@ const [belt, setBelt] = useState("");
 
             <ChevronDown
               size={18}
-              className={`ml-2 transition-transform ${showCategoryDropdown ? "rotate-180" : ""
-                }`}
+              className={`ml-2 transition-transform ${
+                showCategoryDropdown ? "rotate-180" : ""
+              }`}
             />
           </button>
 
           {showCategoryDropdown && (
             <div className="absolute z-50 mt-1 w-full left-0 bg-white border rounded-lg shadow-md max-h-48 overflow-y-auto">
-              {categories.map((cat) => (
+              {studentSports.map((sport, i) => (
                 <div
-                  key={cat}
+                  key={i}
                   onClick={() => {
-                    setSelectedCategory(cat);
+                    setSelectedCategory(sport.category);
                     setSelectedSubCategory("");
-                    setAvailableSubCategories(
-                      subCategoryMap[cat] ? [...subCategoryMap[cat]] : [],
-                    );
-                    setShowSubCategoryDropdown(false);
                     setShowCategoryDropdown(false);
                   }}
                   className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
                 >
-                  {cat}
+                  {sport.category}
                 </div>
               ))}
             </div>
@@ -935,8 +952,9 @@ const [belt, setBelt] = useState("");
               selectedCategory &&
               setShowSubCategoryDropdown(!showSubCategoryDropdown)
             }
-            className={`${inputClass} flex items-center justify-between text-left ${!selectedCategory && "bg-gray-100 cursor-not-allowed"
-              }`}
+            className={`${inputClass} flex items-center justify-between text-left ${
+              !selectedCategory && "bg-gray-100 cursor-not-allowed"
+            }`}
           >
             <span>
               {selectedSubCategory
@@ -948,64 +966,68 @@ const [belt, setBelt] = useState("");
 
             <ChevronDown
               size={18}
-              className={`ml-2 transition-transform ${showSubCategoryDropdown ? "rotate-180" : ""
-                }`}
+              className={`ml-2 transition-transform ${
+                showSubCategoryDropdown ? "rotate-180" : ""
+              }`}
             />
           </button>
 
           {showSubCategoryDropdown && (
             <div className="absolute z-50 mt-1 w-full left-0 bg-white border rounded-lg shadow-md max-h-48 overflow-y-auto">
-              {availableSubCategories.map((sub) => (
-                <div
-                  key={sub}
-                  onClick={() => {
-                    setSelectedSubCategory(sub);
-                    setShowSubCategoryDropdown(false);
-                  }}
-                  className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                >
-                  {sub}
-                </div>
-              ))}
+              {studentSports
+                .filter((s) => s.category === selectedCategory)
+                .map((sport, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedSubCategory(sport.subCategory);
+                      setBelt(sport.belt || "");
+                      setShowSubCategoryDropdown(false);
+                    }}
+                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                  >
+                    {sport.subCategory}
+                  </div>
+                ))}
             </div>
           )}
         </div>
-<div className="relative">
-  <select className={`${inputClass} appearance-none pr-8`}>
-    <option value="">Select Age</option>
-    <option>01 – 10 years Kids</option>
-    <option>11 – 20 years Teenage</option>
-    <option>21 – 45 years Adults</option>
-    <option>45 – 60 years Middle Age</option>
-    <option>61 – 100 years Senior Citizens</option>
-  </select>
+        <div className="relative">
+          <select className={`${inputClass} appearance-none pr-8`}>
+            <option value="">Select Age</option>
+            <option>01 – 10 years Kids</option>
+            <option>11 – 20 years Teenage</option>
+            <option>21 – 45 years Adults</option>
+            <option>45 – 60 years Middle Age</option>
+            <option>61 – 100 years Senior Citizens</option>
+          </select>
 
-  <ChevronDown
-    size={18}
-    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-  />
-</div>
-<div className="relative">
-  <select
-    value={belt}
-    onChange={(e) => setBelt(e.target.value)}
-    className={`${inputClass} appearance-none pr-8`}
-  >
-    <option value="">Select Belt</option>
-    <option>White Belt</option>
-    <option>Yellow Belt</option>
-    <option>Orange Belt</option>
-    <option>Green Belt</option>
-    <option>Blue Belt</option>
-    <option>Brown Belt</option>
-    <option>Black Belt</option>
-  </select>
+          <ChevronDown
+            size={18}
+            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        </div>
+        <div className="relative">
+          <select
+            value={belt}
+            onChange={(e) => setBelt(e.target.value)}
+            className={`${inputClass} appearance-none pr-8`}
+          >
+            <option value="">Select Belt</option>
+            <option>White Belt</option>
+            <option>Yellow Belt</option>
+            <option>Orange Belt</option>
+            <option>Green Belt</option>
+            <option>Blue Belt</option>
+            <option>Brown Belt</option>
+            <option>Black Belt</option>
+          </select>
 
-  <ChevronDown
-    size={18}
-    className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-  />
-</div>
+          <ChevronDown
+            size={18}
+            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
+        </div>
       </div>
       {loadingReport && (
         <div className="mt-6 p-3 rounded-lg bg-orange-50 border border-orange-200 text-orange-600 font-semibold text-center animate-pulse">
@@ -1022,7 +1044,7 @@ const [belt, setBelt] = useState("");
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
               <input
-                type="number"
+                readOnly
                 placeholder="Total Classes"
                 className="p-2 border border-orange-300 rounded-lg"
                 value={manualAttendance.total}
@@ -1035,7 +1057,7 @@ const [belt, setBelt] = useState("");
               />
 
               <input
-                type="number"
+                readOnly
                 placeholder="Present Classes"
                 className="p-2 border border-orange-300 rounded-lg"
                 value={manualAttendance.present}
@@ -1079,14 +1101,12 @@ const [belt, setBelt] = useState("");
                   placeholder="Score (1-10)"
                   value={metrics[key]}
                   onChange={(e) => {
-
                     const val = e.target.value;
 
                     // allow only numbers 0–10
                     if (val === "" || (Number(val) >= 0 && Number(val) <= 10)) {
                       setMetrics({ ...metrics, [key]: val });
                     }
-
                   }}
                 />
                 <input
@@ -1178,15 +1198,15 @@ const [belt, setBelt] = useState("");
 
       {/* FOOTER */}
       <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10">
-
         <button
           onClick={handleSave}
           disabled={savingReport}
           className={`px-6 py-2 rounded-lg font-semibold w-full sm:w-auto transition-all
-    ${savingReport
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-orange-500 text-white hover:bg-orange-600"
-            }
+    ${
+      savingReport
+        ? "bg-gray-400 text-white cursor-not-allowed"
+        : "bg-orange-500 text-white hover:bg-orange-600"
+    }
   `}
         >
           {savingReport ? "Saving..." : "Save"}
