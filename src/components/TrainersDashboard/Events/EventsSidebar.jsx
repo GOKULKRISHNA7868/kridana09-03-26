@@ -9,12 +9,12 @@ const steps = [
   "Operations Management",
   "Visibility & Promotion",
   "Event Analytics",
+  "Edit Event Details",
 ];
 
 const EventsSidebar = ({ step, setStep }) => {
   return (
     <div className="relative w-full">
-
       {/* Vertical dashed line (centered to circles) */}
       <div className="absolute left-[14px] top-3 bottom-3 border-l border-dashed border-gray-300"></div>
 

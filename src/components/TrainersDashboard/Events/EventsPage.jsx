@@ -13,8 +13,9 @@ import PricingPayments from "./steps/PricingPayments";
 import OperationsManagement from "./steps/OperationsManagement";
 import VisibilityPromotion from "./steps/VisibilityPromotion";
 import EventAnalytics from "./steps/EventAnalytics";
+import EditEventDetails from "./steps/EditEventDetails";
 
-const EventsPage = () => {
+const EventsPage = ({ setActiveMenu }) => {
   const { user } = useAuth();
 
   const [step, setStep] = useState(1);
@@ -43,7 +44,7 @@ const EventsPage = () => {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
 
       alert("Draft Saved Successfully");
@@ -67,10 +68,10 @@ const EventsPage = () => {
           status: "in-progress",
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: true },
       );
 
-      if (step < 8) {
+      if (step < 9) {
         setStep((prev) => prev + 1);
       }
     } catch (error) {
@@ -89,21 +90,46 @@ const EventsPage = () => {
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <BasicInformation formData={formData} setFormData={setFormData} />;
+        return (
+          <BasicInformation formData={formData} setFormData={setFormData} />
+        );
       case 2:
-        return <ScheduleLocation formData={formData} setFormData={setFormData} />;
+        return (
+          <ScheduleLocation formData={formData} setFormData={setFormData} />
+        );
       case 3:
-        return <OrganizerDetails formData={formData} setFormData={setFormData} />;
+        return (
+          <OrganizerDetails formData={formData} setFormData={setFormData} />
+        );
       case 4:
-        return <ParticipantConfiguration formData={formData} setFormData={setFormData} />;
+        return (
+          <ParticipantConfiguration
+            formData={formData}
+            setFormData={setFormData}
+          />
+        );
       case 5:
-        return <PricingPayments formData={formData} setFormData={setFormData} />;
+        return (
+          <PricingPayments formData={formData} setFormData={setFormData} />
+        );
       case 6:
-        return <OperationsManagement formData={formData} setFormData={setFormData} />;
+        return (
+          <OperationsManagement formData={formData} setFormData={setFormData} />
+        );
       case 7:
-        return <VisibilityPromotion formData={formData} setFormData={setFormData} />;
+        return (
+          <VisibilityPromotion formData={formData} setFormData={setFormData} />
+        );
       case 8:
         return <EventAnalytics formData={formData} />;
+      case 9:
+        return (
+          <EditEventDetails
+            formData={formData}
+            setFormData={setFormData}
+            setActiveMenu={setActiveMenu}
+          />
+        );
       default:
         return null;
     }
@@ -111,7 +137,6 @@ const EventsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#E7B89E] px-4 sm:px-6 lg:px-10 py-8">
-
       {/* ================= TOP HEADING ================= */}
       <div className="max-w-7xl mx-auto mb-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
@@ -122,26 +147,27 @@ const EventsPage = () => {
         </p>
       </div>
       {/* Thin Divider Line */}
-<div className="max-w-7xl mx-auto border-b border-black/20 mb-8"></div>
-
+      <div className="max-w-7xl mx-auto border-b border-black/20 mb-8"></div>
 
       {/* ================= MAIN LAYOUT ================= */}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-
         {/* ================= Sidebar ================= */}
-        <div className="
+        <div
+          className="
           w-full 
           lg:w-72 
           bg-white
           rounded-2xl 
           p-5 
           shadow-md
-        ">
+        "
+        >
           <EventsSidebar step={step} setStep={setStep} />
         </div>
 
         {/* ================= Main Content ================= */}
-        <div className="
+        <div
+          className="
           flex-1 
           bg-white 
           rounded-2xl 
@@ -149,14 +175,11 @@ const EventsPage = () => {
           p-4 
           sm:p-6 
           lg:p-8
-        ">
-
+        "
+        >
           {/* Back Button */}
           {step > 1 && (
-            <button
-              onClick={back}
-              className="text-orange-600 font-medium mb-6"
-            >
+            <button onClick={back} className="text-orange-600 font-medium mb-6">
               ← Back
             </button>
           )}
@@ -164,9 +187,9 @@ const EventsPage = () => {
           {/* Step Content */}
           {renderStep()}
 
-         {/* Bottom Buttons */}
-{![ 8].includes(step) && (
-  <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10">
+          {/* Bottom Buttons */}
+          {![9].includes(step) && (
+            <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10">
               <button
                 onClick={saveDraft}
                 className="
@@ -196,7 +219,6 @@ const EventsPage = () => {
               </button>
             </div>
           )}
-
         </div>
       </div>
     </div>
